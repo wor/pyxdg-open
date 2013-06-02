@@ -16,6 +16,7 @@ import os
 import os.path
 import subprocess
 import urllib
+import configparser
 
 import wor.desktop_file_parser.parser as df_parser
 import wor.tokenizer
@@ -24,11 +25,8 @@ from pprint import pprint as pp
 from wor.os import nrwalk as walk
 
 
-DESKTOP_FILE_PATHS = [
-    "{}/.local/share/applications/".format(os.path.expanduser("~")),
-    "/usr/share/applications/",
-    "/usr/local/share/applications/",
-    ]
+# Global config options
+CONFIG = {}
 
 
 class URL(object):
@@ -136,7 +134,7 @@ def get_desktop_file_from_mime_list(mime_type):
     """
     def get_full_path(desktop_file):
         # We cannot know where desktop file is found?
-        for dp in DESKTOP_FILE_PATHS:
+        for dp in CONFIG["desktop_file_paths"]:
             test_desktop_file = os.path.join(dp, desktop_file)
             if os.path.isfile(test_desktop_file):
                 return test_desktop_file
@@ -156,7 +154,7 @@ def get_desktop_file_from_mime_list(mime_type):
     log = logging.getLogger(__name__)
 
     # First parse desktop file lists, and try to find desktop file there
-    for dp in DESKTOP_FILE_PATHS:
+    for dp in CONFIG["desktop_file_paths"]:
         desktop_file, list_file = check_file(["mimeapps.list", "defaults.list"])
         if desktop_file:
             df_fp = get_full_path(desktop_file)
@@ -169,7 +167,7 @@ def get_desktop_file_from_mime_list(mime_type):
     return None
 
 def get_desktop_file_by_search(key_value_pair):
-    """Finds desktop file by searching from DESKTOP_FILE_PATHS.
+    """Finds desktop file by searching from CONFIG["desktop_file_paths"].
 
     Desktop file which contains given key value pair is returned. Desktop files
     are returned as DesktopFile objects.
@@ -182,7 +180,7 @@ def get_desktop_file_by_search(key_value_pair):
     # Next try to find correct desktop file by parsing invidual desktop files
     search_key   = key_value_pair[0]
     search_value = key_value_pair[1]
-    for dp in DESKTOP_FILE_PATHS:
+    for dp in CONFIG["desktop_file_paths"]:
         for root, dirs, files in walk(dp, filefilter=lambda f,_: not f.endswith(".desktop")):
             for f in files:
                 df_name = os.path.join(root, f)
@@ -298,7 +296,7 @@ def xdg_open(url=None):
 
     if purl.mime_type:
         # Third find .desktop file handling the mime_type
-        log.info(DESKTOP_FILE_PATHS)
+        log.info(CONFIG["desktop_file_paths"])
         desktop_file = get_desktop_file(("MimeType", purl.mime_type))
         if not desktop_file:
             log.error("Could not find .desktop file associated with mime type '{}'".format(purl.mime_type))
@@ -326,10 +324,10 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
 
     Parameters:
 
-    - `inputs`: list. List of arguments to be parsed.
-    - `parent_parsers`: list. List of parent parsers which are used as base.
-    - `namespace`: namespace. Namespace where parsed options are added. Can be
-      an existing class for example.
+        inputs: list. List of arguments to be parsed.
+        parent_parsers: list. List of parent parsers which are used as base.
+        namespace: namespace. Namespace where parsed options are added. Can be
+            an existing class for example.
     """
     import argparse
 
@@ -345,6 +343,46 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
         help='Positional argument.')
 
     return parser.parse_args(inputs)
+
+
+def read_config_options(config_file_path):
+    """
+    """
+    def headerless_config_file(config_file):
+        """Generator which wraps config_file and gives DEFAULT section header as the
+        first line.
+
+        Parameters:
+            config_file: file like object. Open config file.
+        """
+        yield "[DEFAULT]\n"
+        # Next yield the actual config file next
+        for line in config_file:
+            yield line
+    def parse_comma_sep_list(csl_str):
+        sl = csl_str.split(",")
+        sl = [ os.path.expanduser(s.strip()) for s in sl ]
+        return sl
+
+    config = configparser.ConfigParser()
+
+    # Defaults
+    defaults = {
+            "desktop_file_paths": "~/.local/share/applications/, /usr/share/applications/, /usr/local/share/applications/"
+            }
+    config.read_dict({"DEFAULT": defaults})
+
+    # Parse config file
+    config_file_path = os.path.expanduser(config_file_path)
+
+    # Overwrite defaults from config file if it exists
+    if os.path.exists(config_file_path):
+        with open(config_file_path) as cf:
+            config.read_file(headerless_config_file(cf), source=config_file_path)
+
+    options_dict = {}
+    options_dict["desktop_file_paths"] = parse_comma_sep_list(config["DEFAULT"]["desktop_file_paths"])
+    return options_dict
 
 
 def main():
@@ -369,6 +407,12 @@ def main():
     # Init module level logger with given verbosity level
     lformat = '%(levelname)s:%(funcName)s:%(lineno)s: %(message)s'
     logging.basicConfig(level=wor.utils.convert_int_to_logging_level(args.verbose), format=lformat)
+
+    # TODO: add config file as parameter
+    config_file_path = "~/.config/pyxdg-open/pyxdg-open.conf"
+    global CONFIG
+    CONFIG = read_config_options(config_file_path)
+    pp(CONFIG)
 
     del args.verbose
 
