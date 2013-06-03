@@ -438,7 +438,13 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
 
 
 def read_config_options(config_file_path):
-    """
+    """Reads config file options and returns them as dict.
+
+    Parameters:
+        config_file_path: str. Path of a config file to be opened and parsed.
+
+    Returns:
+        dict. A mapping from option name to option value.
     """
     def headerless_config_file(config_file):
         """Generator which wraps config_file and gives DEFAULT section header as the
