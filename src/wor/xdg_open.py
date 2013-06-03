@@ -270,7 +270,7 @@ def run_exec(exec_str, purl, terminal=False, shell=True):
             log.warn("Could not find terminal emulator .desktop file: defaulting to xterm")
             exec_str = "xterm -e " + exec_str
         else:
-            exec_str = terminal_df.get_entry_key_from_group("Exec").value
+            exec_str = terminal_df.get_entry_value_from_group("Exec")
 
     log.info("Final exec string: {}".format(exec_str))
     subprocess.call(exec_str, shell=True)
@@ -312,9 +312,9 @@ def xdg_open(url=None):
     log.info(str(desktop_file))
 
     # TODO: Are there any other possible actions?
-    run_exec(desktop_file.get_entry_key_from_group("Exec").value,
+    run_exec(desktop_file.get_entry_value_from_group("Exec"),
             purl,
-            desktop_file.get_entry_key_from_group("Terminal").value)
+            desktop_file.get_entry_value_from_group("Terminal"))
 
     return
 
