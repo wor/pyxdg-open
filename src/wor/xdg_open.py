@@ -255,12 +255,38 @@ def run_exec(exec_str, purl, terminal=False, shell=True):
 
     # Fill fields
     # TODO: '%' char escaping is not considered yet
+    # http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
+
+    # First remove/ignore deprecated
+    exec_str = exec_str.replace('%d', "")
+    exec_str = exec_str.replace('%D', "")
+    exec_str = exec_str.replace('%n', "")
+    exec_str = exec_str.replace('%N', "")
+    exec_str = exec_str.replace('%v', "")
+    exec_str = exec_str.replace('%m', "")
+
     exec_str = exec_str.replace('%f', purl.get_f())
     exec_str = exec_str.replace('%u', purl.get_url())
 
-    # TODO: replace all format fields
-    if exec_str.find('%') != -1:
-        log.error("TODO: format fields not all replaced: {}".format(exec_str))
+    # TODO: implement these format fields
+    if exec_str.find('%F') != -1:
+        log.error("TODO: exec value format field %F")
+        sys.exit(1)
+
+    if exec_str.find('%U') != -1:
+        log.error("TODO: exec value format field %F")
+        sys.exit(1)
+
+    if exec_str.find('%i') != -1:
+        log.error("TODO: exec value format field %F")
+        sys.exit(1)
+
+    if exec_str.find('%c') != -1:
+        log.error("TODO: exec value format field %F")
+        sys.exit(1)
+
+    if exec_str.find('%k') != -1:
+        log.error("TODO: exec value format field %F")
         sys.exit(1)
 
     if terminal:
