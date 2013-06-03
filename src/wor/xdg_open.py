@@ -65,6 +65,8 @@ class URL(object):
             # Treat url as relative file
             return "file", os.path.join(os.getcwd(), url_str)
         return (None, None)
+    def get_url(self):
+        return self.url
     def get_f(self):
         return self.target
 
@@ -254,6 +256,7 @@ def run_exec(exec_str, purl, terminal=False, shell=True):
     # Fill fields
     # TODO: '%' char escaping is not considered yet
     exec_str = exec_str.replace('%f', purl.get_f())
+    exec_str = exec_str.replace('%u', purl.get_url())
 
     # TODO: replace all format fields
     if exec_str.find('%') != -1:
