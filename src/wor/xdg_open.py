@@ -472,7 +472,6 @@ def main():
 
     global CONFIG
     CONFIG = read_config_options(args.config_file)
-    pp(CONFIG)
 
     del args.config_file
     del args.verbose
