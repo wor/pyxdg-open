@@ -350,7 +350,8 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
 
             # Append to previous verbosity level, this allows multiple "-v"
             # switches to be cumulatively counted.
-            verbosity_level += getattr(namespace, self.dest)
+            org_verbosity = getattr(namespace, self.dest)
+            verbosity_level += 0 if org_verbosity == None else org_verbosity
             setattr(namespace, self.dest, verbosity_level)
     class Quiet_action(argparse.Action):
         """Argparse action: Cumulative quiet switch '-q' counter"""
@@ -369,7 +370,10 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
 
             # Append to previous verbosity level, this allows multiple "-q"
             # switches to be cumulatively counted.
-            verbosity_level = getattr(namespace, self.dest) - verbosity_level
+            org_verbosity = getattr(namespace, self.dest)
+            if org_verbosity == None:
+                org_verbosity = 0
+            verbosity_level = org_verbosity - verbosity_level
             setattr(namespace, self.dest, verbosity_level)
 
     # initialize the parser object:
@@ -381,7 +385,7 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
     parser.add_argument(
         '-v',
         nargs='?',
-        default=0,
+        default=None,
         action=Verbose_action,
         dest='verbose',
         help="Verbosity level specifier.")
@@ -463,12 +467,22 @@ def main():
     signal.signal(signal.SIGINT, term_sig_handler) # for ctrl+c
 
     args = process_cmd_line()
-    # TODO: read this from env variable XDG_UTILS_DEBUG_LEVEL
-    args.verbose=9
+
+    # Set verbose level, prefer verbosity set on command line over
+    # XDG_UTILS_DEBUG_LEVEL environment variable.
+    if args.verbose == None:
+        xdg_utils_dl = os.getenv("XDG_UTILS_DEBUG_LEVEL")
+        if xdg_utils_dl != None and xdg_utils_dl.isnumeric():
+            args.verbose = int(xdg_utils_dl)
+        else:
+            args.verbose = 0
 
     # Init module level logger with given verbosity level
     lformat = '%(levelname)s:%(funcName)s:%(lineno)s: %(message)s'
     logging.basicConfig(level=wor.utils.convert_int_to_logging_level(args.verbose), format=lformat)
+
+    #log = logging.getLogger(__name__)
+    #log.info("Verbosity level set at: {}".format(args.verbose))
 
     global CONFIG
     CONFIG = read_config_options(args.config_file)
