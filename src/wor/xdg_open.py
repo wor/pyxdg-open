@@ -330,12 +330,71 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
             an existing class for example.
     """
     import argparse
+    class Verbose_action(argparse.Action):
+        """Argparse action: Cumulative verbose switch '-v' counter"""
+        def __call__(self, parser, namespace, values, option_string=None):
+            """Values can be None, "v", "vv", "vvv" or [0-9]+
+            """
+            if values is None:
+                verbosity_level = 1
+            elif values.isdigit():
+                verbosity_level = int(values)
+            else: # [v]+
+                v_count = values.count('v')
+                if v_count != len(values):
+                    raise argparse.ArgumentError(self, "Invalid parameter given for verbose: '{}'".format(values))
+                verbosity_level = v_count+1
+
+            # Append to previous verbosity level, this allows multiple "-v"
+            # switches to be cumulatively counted.
+            verbosity_level += getattr(namespace, self.dest)
+            setattr(namespace, self.dest, verbosity_level)
+    class Quiet_action(argparse.Action):
+        """Argparse action: Cumulative quiet switch '-q' counter"""
+        def __call__(self, parser, namespace, values, option_string=None):
+            """qalues can be None, "q", "qq", "qqq" or [0-9]+
+            """
+            if values is None:
+                verbosity_level = 1
+            elif values.isdigit():
+                verbosity_level = int(values)
+            else: # [q]+
+                q_count = values.count('q')
+                if q_count != len(values):
+                    raise argparse.ArgumentError(self, "Invalid parameter given for quiet: '{}'".format(values))
+                verbosity_level = q_count+1
+
+            # Append to previous verbosity level, this allows multiple "-q"
+            # switches to be cumulatively counted.
+            verbosity_level = getattr(namespace, self.dest) - verbosity_level
+            setattr(namespace, self.dest, verbosity_level)
 
     # initialize the parser object:
     parser = argparse.ArgumentParser(
             parents = parent_parsers,
             formatter_class = argparse.ArgumentDefaultsHelpFormatter,
             description = "xdg-open (from xdg-utils) replacement.")
+
+    parser.add_argument(
+        '-v',
+        nargs='?',
+        default=0,
+        action=Verbose_action,
+        dest='verbose',
+        help="Verbosity level specifier.")
+
+    parser.add_argument(
+        '-q',
+        nargs='?',
+        action=Quiet_action,
+        dest='verbose',
+        help="Be more quiet, negatively affects verbosity level.")
+
+    parser.add_argument(
+        '-c', '--config-file',
+        type=str,
+        default="~/.config/pyxdg-open/pyxdg-open.conf",
+        help="Config file to be used.")
 
     parser.add_argument(
         'url',
@@ -408,12 +467,11 @@ def main():
     lformat = '%(levelname)s:%(funcName)s:%(lineno)s: %(message)s'
     logging.basicConfig(level=wor.utils.convert_int_to_logging_level(args.verbose), format=lformat)
 
-    # TODO: add config file as parameter
-    config_file_path = "~/.config/pyxdg-open/pyxdg-open.conf"
     global CONFIG
-    CONFIG = read_config_options(config_file_path)
+    CONFIG = read_config_options(args.config_file)
     pp(CONFIG)
 
+    del args.config_file
     del args.verbose
 
     return xdg_open(**args.__dict__)
