@@ -290,13 +290,18 @@ def run_exec(exec_str, purl, terminal=False, shell=True):
         sys.exit(1)
 
     if terminal:
-        terminal_df = get_desktop_file(("Category", "TerminalEmulator"))
-        # TODO: configure default terminal
-        if not terminal_df:
-            log.warn("Could not find terminal emulator .desktop file: defaulting to xterm")
-            exec_str = "xterm -e " + exec_str
+        if CONFIG["default_terminal_emulator"]:
+            exec_str = CONFIG["default_terminal_emulator"] + " -e " + exec_str
         else:
-            exec_str = terminal_df.get_entry_value_from_group("Exec")
+            # If not default terminal emulator specified in the config file then
+            # try to find a terminal emulator from desktop files.
+            terminal_df = get_desktop_file(("Category", "TerminalEmulator"))
+            if terminal_df:
+                exec_str = terminal_df.get_entry_value_from_group("Exec") + " -e " + exec_str
+            else:
+                # Just try xterm if no TerminalEmulator desktop file found
+                log.warn("Could not find terminal emulator .desktop file: defaulting to xterm")
+                exec_str = "xterm -e " + exec_str
 
     log.info("Final exec string: {}".format(exec_str))
     subprocess.call(exec_str, shell=True)
@@ -461,12 +466,16 @@ def read_config_options(config_file_path):
         sl = csl_str.split(",")
         sl = [ os.path.expanduser(s.strip()) for s in sl ]
         return sl
+    def store_option(opts, opt_name, proc_func=None):
+        opt = config.get("DEFAULT", opt_name, fallback=defaults[opt_name])
+        opts[opt_name] = opt if not proc_func else proc_func(opt)
 
     config = configparser.ConfigParser()
 
     # Defaults
     defaults = {
-            "desktop_file_paths": "~/.local/share/applications/, /usr/share/applications/, /usr/local/share/applications/"
+            "desktop_file_paths": "~/.local/share/applications/, /usr/share/applications/, /usr/local/share/applications/",
+            "default_terminal_emulator": "",
             }
     config.read_dict({"DEFAULT": defaults})
 
@@ -479,7 +488,8 @@ def read_config_options(config_file_path):
             config.read_file(headerless_config_file(cf), source=config_file_path)
 
     options_dict = {}
-    options_dict["desktop_file_paths"] = parse_comma_sep_list(config["DEFAULT"]["desktop_file_paths"])
+    store_opt(options_dict, "desktop_file_paths", parse_comma_sep_list)
+    store_opt(options_dict, "default_terminal_emulator")
     return options_dict
 
 
