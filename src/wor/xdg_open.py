@@ -308,7 +308,7 @@ def run_exec(exec_str, purl, terminal=False, shell=True):
     log.info("Called exec string.")
 
 
-def xdg_open(url=None):
+def xdg_open(urls=None):
     """
     Tries to find desktop object associated with given url and evaluate it's
     exec value.
@@ -317,7 +317,10 @@ def xdg_open(url=None):
         - url: str. URL to open.
     """
     log = logging.getLogger(__name__)
-    log.info("Got url: '{}'".format(url))
+    log.info("Got urls: '{}'".format(urls))
+
+    # TODO: handle multiple urls
+    url = urls[0]
 
     # First create URL object
     purl = URL(url)
@@ -434,8 +437,15 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
         default="~/.config/pyxdg-open/pyxdg-open.conf",
         help="Config file to be used.")
 
+    #parser.add_argument(
+    #    '--dryrun',
+    #    default=False,
+    #    action='store_true',
+    #    help="Don't evaluate final exec value.")
+
     parser.add_argument(
-        'url',
+        'urls',
+        nargs='+',
         metavar='URL',
         help='Positional argument.')
 
