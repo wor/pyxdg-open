@@ -13,6 +13,10 @@ Example config file (by default located at:
                           /usr/share/applications/,
                           /usr/local/share/applications/
 
+    # If default terminal emulator is not specified then first desktop file with
+    # TerminalEmulator as Category will be used.
+    default_terminal_emulator = urxtvc
+
 
 Depends
 -------
@@ -29,6 +33,7 @@ Similar programs
 TODO
 ----
 
+* Add multiple url handling
 * Document desktop list file usage
 * Add info about easy installation
 * Read desktop cache files
