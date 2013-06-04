@@ -466,7 +466,7 @@ def read_config_options(config_file_path):
         sl = csl_str.split(",")
         sl = [ os.path.expanduser(s.strip()) for s in sl ]
         return sl
-    def store_option(opts, opt_name, proc_func=None):
+    def store_opt(opts, opt_name, proc_func=None):
         opt = config.get("DEFAULT", opt_name, fallback=defaults[opt_name])
         opts[opt_name] = opt if not proc_func else proc_func(opt)
 
