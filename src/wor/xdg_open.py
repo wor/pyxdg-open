@@ -242,7 +242,7 @@ def get_desktop_file(key_value_pair=("","")):
     return df
 
 
-def run_exec(exec_str, purl, terminal=False, shell=True):
+def run_exec(exec_str, purl, terminal=False, shell=True, dryrun=False):
     """Evaluates/Runs desktop files Exec value.
 
     http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#exec-variables
@@ -304,11 +304,12 @@ def run_exec(exec_str, purl, terminal=False, shell=True):
                 exec_str = "xterm -e " + exec_str
 
     log.info("Final exec string: {}".format(exec_str))
-    subprocess.call(exec_str, shell=True)
+    if not dryrun:
+        subprocess.call(exec_str, shell=True)
     log.info("Called exec string.")
 
 
-def xdg_open(urls=None):
+def xdg_open(urls=None, dryrun=False):
     """
     Tries to find desktop object associated with given url and evaluate it's
     exec value.
@@ -348,7 +349,8 @@ def xdg_open(urls=None):
     # TODO: Are there any other possible actions?
     run_exec(desktop_file.get_entry_value_from_group("Exec"),
             purl,
-            desktop_file.get_entry_value_from_group("Terminal"))
+            desktop_file.get_entry_value_from_group("Terminal"),
+            dryrun=dryrun)
 
     return
 
@@ -437,11 +439,11 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
         default="~/.config/pyxdg-open/pyxdg-open.conf",
         help="Config file to be used.")
 
-    #parser.add_argument(
-    #    '--dryrun',
-    #    default=False,
-    #    action='store_true',
-    #    help="Don't evaluate final exec value.")
+    parser.add_argument(
+        '--dryrun',
+        default=False,
+        action='store_true',
+        help="Don't evaluate final exec value.")
 
     parser.add_argument(
         'urls',
