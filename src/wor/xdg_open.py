@@ -477,7 +477,6 @@ def read_config_options(config_file_path):
             "desktop_file_paths": "~/.local/share/applications/, /usr/share/applications/, /usr/local/share/applications/",
             "default_terminal_emulator": "",
             }
-    config.read_dict({"DEFAULT": defaults})
 
     # Parse config file
     config_file_path = os.path.expanduser(config_file_path)
