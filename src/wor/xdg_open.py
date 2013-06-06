@@ -45,6 +45,7 @@ class URL(object):
             self.protocol = protocol
             self.target = target
         self.mime_type = mime_type
+        self.desktop_file = None
     def __repr__(self):
         return "<{}|{}|{}>".format(self.url, self.protocol, self.target)
     def __get_protocol_and_target__(self, url_str):
@@ -242,71 +243,86 @@ def get_desktop_file(key_value_pair=("","")):
     return df
 
 
-def run_exec(exec_str, purl, terminal=False, shell=True, dryrun=False):
+def run_exec(purls, shell=True, dryrun=False):
     """Evaluates/Runs desktop files Exec value.
 
     http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#exec-variables
 
     Should be escaped inside double quotes
         double quote character, backtick character ("`"), dollar sign ("$") and backslash character ("\")
+
+    TODO: shell=False not yet implemented, requires exec value parsing.
     """
     log = logging.getLogger(__name__)
+    def get_prepared_exec_str(purl, purls):
+        """Replaces exec_str fields (%x) and wraps with terminal emulator
+        command if terminal True.
+        """
+        exec_str = purl.desktop_file.get_entry_value_from_group("Exec")
+
+        # Fill fields
+        # TODO: '%' char escaping is not considered yet
+        # http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
+
+        # First remove/ignore deprecated
+        exec_str = exec_str.replace('%d', "")
+        exec_str = exec_str.replace('%D', "")
+        exec_str = exec_str.replace('%n', "")
+        exec_str = exec_str.replace('%N', "")
+        exec_str = exec_str.replace('%v', "")
+        exec_str = exec_str.replace('%m', "")
+
+        exec_str = exec_str.replace('%f', purl.get_f())
+        exec_str = exec_str.replace('%u', purl.get_url())
+
+        exec_str = exec_str.replace('%F', " ".join([ purl.get_f() for purl in purls]))
+        exec_str = exec_str.replace('%U', " ".join([ purl.get_url() for purl in purls]))
+
+        # TODO: implement these format fields
+        if exec_str.find('%i') != -1:
+            log.error("TODO: exec value format field %F")
+            sys.exit(1)
+        if exec_str.find('%c') != -1:
+            log.error("TODO: exec value format field %F")
+            sys.exit(1)
+        if exec_str.find('%k') != -1:
+            log.error("TODO: exec value format field %F")
+            sys.exit(1)
+
+        if purl.desktop_file.get_entry_value_from_group("Terminal"):
+            log.info("wrapping exec string with terminal emulator call.")
+            if CONFIG["default_terminal_emulator"]:
+                exec_str = CONFIG["default_terminal_emulator"] + " -e " + exec_str
+            else:
+                # If not default terminal emulator specified in the config file then
+                # try to find a terminal emulator from desktop files.
+                terminal_df = get_desktop_file(("Category", "TerminalEmulator"))
+                if terminal_df:
+                    exec_str = terminal_df.get_entry_value_from_group("Exec") + " -e " + exec_str
+                else:
+                    # Just try xterm if no TerminalEmulator desktop file found
+                    log.warn("Could not find terminal emulator .desktop file: defaulting to xterm")
+                    exec_str = "xterm -e " + exec_str
+        return exec_str
+
+    exec_str = purls[0].desktop_file.get_entry_value_from_group("Exec")
+    exec_strs = []
     log.info("run_exec: Shell: {} Exec: {}".format(shell, exec_str))
 
-    # Fill fields
-    # TODO: '%' char escaping is not considered yet
-    # http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
+    # If we have %f or %u and length(purls) > 1, then do multiple exec calls
+    if exec_str.find('%f') != 1 and \
+            exec_str.find('%u') != 1 and \
+            len(purls) > 1:
+        for purl in purls:
+            exec_strs.append(get_prepared_exec_str(purl, purls))
+    else:
+        exec_strs.append(get_prepared_exec_str(purls[0], purls))
 
-    # First remove/ignore deprecated
-    exec_str = exec_str.replace('%d', "")
-    exec_str = exec_str.replace('%D', "")
-    exec_str = exec_str.replace('%n', "")
-    exec_str = exec_str.replace('%N', "")
-    exec_str = exec_str.replace('%v', "")
-    exec_str = exec_str.replace('%m', "")
-
-    exec_str = exec_str.replace('%f', purl.get_f())
-    exec_str = exec_str.replace('%u', purl.get_url())
-
-    # TODO: implement these format fields
-    if exec_str.find('%F') != -1:
-        log.error("TODO: exec value format field %F")
-        sys.exit(1)
-
-    if exec_str.find('%U') != -1:
-        log.error("TODO: exec value format field %F")
-        sys.exit(1)
-
-    if exec_str.find('%i') != -1:
-        log.error("TODO: exec value format field %F")
-        sys.exit(1)
-
-    if exec_str.find('%c') != -1:
-        log.error("TODO: exec value format field %F")
-        sys.exit(1)
-
-    if exec_str.find('%k') != -1:
-        log.error("TODO: exec value format field %F")
-        sys.exit(1)
-
-    if terminal:
-        if CONFIG["default_terminal_emulator"]:
-            exec_str = CONFIG["default_terminal_emulator"] + " -e " + exec_str
-        else:
-            # If not default terminal emulator specified in the config file then
-            # try to find a terminal emulator from desktop files.
-            terminal_df = get_desktop_file(("Category", "TerminalEmulator"))
-            if terminal_df:
-                exec_str = terminal_df.get_entry_value_from_group("Exec") + " -e " + exec_str
-            else:
-                # Just try xterm if no TerminalEmulator desktop file found
-                log.warn("Could not find terminal emulator .desktop file: defaulting to xterm")
-                exec_str = "xterm -e " + exec_str
-
-    log.info("Final exec string: {}".format(exec_str))
-    if not dryrun:
-        subprocess.call(exec_str, shell=True)
-    log.info("Called exec string.")
+    log.info("Final exec string(s): {}".format(repr(exec_strs)))
+    for es in exec_strs:
+        log.info("Calling exec string: {}".format(es))
+        if not dryrun:
+            subprocess.Popen(es, shell=True)
 
 
 def xdg_open(urls=None, dryrun=False):
@@ -318,39 +334,60 @@ def xdg_open(urls=None, dryrun=False):
         - url: str. URL to open.
     """
     log = logging.getLogger(__name__)
+    def group_purls(purls):
+        """Groups purls with same desktop_file together.
+        """
+        purls.sort(key=lambda k: k.desktop_file.file_name)
+        grouped_purls = []
+        group = []
+        store = False
+        for i in range(0, len(purls)):
+            if store:
+                store = False
+                grouped_purls.append(group)
+                group = []
+            group.append(purls[i])
+            if i+1 >= len(purls) or purls[i].desktop_file.file_name != purls[i+1].desktop_file.file_name:
+                store = True
+        if group:
+            grouped_purls.append(group)
+        return grouped_purls
+
     log.info("Got urls: '{}'".format(urls))
 
-    # TODO: handle multiple urls
-    url = urls[0]
+    # First create URL objects
+    purls = []
+    for url in urls:
+        purl = URL(url)
+        log.info("'{}' protocol was: '{}'".format(purl.url, purl.protocol))
+        log.info("'{}' target was: '{}'".format(purl.url, purl.target))
 
-    # First create URL object
-    purl = URL(url)
-    log.info("'{}' protocol was: '{}'".format(purl.url, purl.protocol))
-    log.info("'{}' target was: '{}'".format(purl.url, purl.target))
+        # Second find mime type of the url
+        purl.mime_type = get_mimetype(purl.url, purl.protocol)
+        log.info("'{}' mime type was: '{}'".format(purl.url, purl.mime_type))
 
-    # Second find mime type of the url
-    purl.mime_type = get_mimetype(purl.url, purl.protocol)
-    log.info("'{}' mime type was: '{}'".format(purl.url, purl.mime_type))
-
-    if purl.mime_type:
-        # Third find .desktop file handling the mime_type
-        log.info(CONFIG["desktop_file_paths"])
-        desktop_file = get_desktop_file(("MimeType", purl.mime_type))
-        if not desktop_file:
-            log.error("Could not find .desktop file associated with mime type '{}'".format(purl.mime_type))
+        if purl.mime_type:
+            # Third find .desktop file handling the mime_type
+            log.info(CONFIG["desktop_file_paths"])
+            desktop_file = get_desktop_file(("MimeType", purl.mime_type))
+            if not desktop_file:
+                log.error("Could not find .desktop file associated with mime type '{}'".format(purl.mime_type))
+                return 1
+        else:
+            log.error("Could not get mime type for the given url: '{}'".format(purl.url))
             return 1
-    else:
-        log.error("Could not get mime type for the given url: '{}'".format(purl.url))
-        return 1
+        purl.desktop_file = desktop_file
+        log.info("Found desktop file '{}'".format(desktop_file.file_name))
+        log.info(str(desktop_file))
+        purls.append(purl)
 
-    log.info("Found desktop file '{}'".format(desktop_file.file_name))
-    log.info(str(desktop_file))
+    # Group urls with same desktop_file
+    grouped_purls = group_purls(purls)
 
-    # TODO: Are there any other possible actions?
-    run_exec(desktop_file.get_entry_value_from_group("Exec"),
-            purl,
-            desktop_file.get_entry_value_from_group("Terminal"),
-            dryrun=dryrun)
+    # TODO: Are there any other possible actions, beside running exec?
+    # Run exec should have all urls with same desktop_file
+    for purls in grouped_purls: # for every group / list of purls
+        run_exec(purls, shell=True, dryrun=dryrun)
 
     return
 

@@ -33,7 +33,6 @@ Similar programs
 TODO
 ----
 
-* Add multiple url handling
 * Document desktop list file usage
 * Add info about easy installation
 * Read desktop cache files
