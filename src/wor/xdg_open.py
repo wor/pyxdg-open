@@ -10,6 +10,7 @@ https://wiki.archlinux.org/index.php/Default_Applications
 import logging
 import locale
 import magic
+import shlex
 import re
 import io
 import sys
@@ -273,11 +274,11 @@ def run_exec(purls, shell=True, dryrun=False):
         exec_str = exec_str.replace('%v', "")
         exec_str = exec_str.replace('%m', "")
 
-        exec_str = exec_str.replace('%f', purl.get_f())
-        exec_str = exec_str.replace('%u', purl.get_url())
+        exec_str = exec_str.replace('%f', shlex.quote(purl.get_f()))
+        exec_str = exec_str.replace('%u', shlex.quote(purl.get_url()))
 
-        exec_str = exec_str.replace('%F', " ".join([ purl.get_f() for purl in purls]))
-        exec_str = exec_str.replace('%U', " ".join([ purl.get_url() for purl in purls]))
+        exec_str = exec_str.replace('%F', " ".join([ shlex.quote(purl.get_f()) for purl in purls]))
+        exec_str = exec_str.replace('%U', " ".join([ shlex.quote(purl.get_url()) for purl in purls]))
 
         icon_value = purl.desktop_file.get_entry_value_from_group("Icon")
         exec_str = exec_str.replace('%i', icon_value if icon_value != None else "")
@@ -291,10 +292,10 @@ def run_exec(purls, shell=True, dryrun=False):
             if name == None:
                 exec_str = exec_str.replace('%c', "")
             else:
-                exec_str = exec_str.replace('%c', name)
+                exec_str = exec_str.replace('%c', shlex.quote(name))
 
         # TODO: file name in URI form if not local (vholder?)
-        exec_str = exec_str.replace('%k', purl.desktop_file.file_name)
+        exec_str = exec_str.replace('%k', shlex.quote(purl.desktop_file.file_name))
 
         if purl.desktop_file.get_entry_value_from_group("Terminal"):
             log.info("wrapping exec string with terminal emulator call.")
