@@ -278,16 +278,17 @@ def run_exec(purls, shell=True, dryrun=False):
         exec_str = exec_str.replace('%F', " ".join([ purl.get_f() for purl in purls]))
         exec_str = exec_str.replace('%U', " ".join([ purl.get_url() for purl in purls]))
 
+        icon_value = purl.desktop_file.get_entry_value_from_group("Icon")
+        exec_str = exec_str.replace('%i', icon_value if icon_value != None else "")
+
         # TODO: implement these format fields
-        if exec_str.find('%i') != -1:
-            log.error("TODO: exec value format field %F")
-            sys.exit(1)
+        # Locale dependent name
         if exec_str.find('%c') != -1:
             log.error("TODO: exec value format field %F")
             sys.exit(1)
-        if exec_str.find('%k') != -1:
-            log.error("TODO: exec value format field %F")
-            sys.exit(1)
+
+        # TODO: file name in URI form if not local (vholder?)
+        exec_str = exec_str.replace('%k', purl.desktop_file.file_name)
 
         if purl.desktop_file.get_entry_value_from_group("Terminal"):
             log.info("wrapping exec string with terminal emulator call.")
