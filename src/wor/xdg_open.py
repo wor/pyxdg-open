@@ -8,6 +8,7 @@ https://wiki.archlinux.org/index.php/Default_Applications
 """
 
 import logging
+import locale
 import magic
 import re
 import io
@@ -281,11 +282,16 @@ def run_exec(purls, shell=True, dryrun=False):
         icon_value = purl.desktop_file.get_entry_value_from_group("Icon")
         exec_str = exec_str.replace('%i', icon_value if icon_value != None else "")
 
-        # TODO: implement these format fields
-        # Locale dependent name
-        if exec_str.find('%c') != -1:
-            log.error("TODO: exec value format field %F")
-            sys.exit(1)
+        # Replace locale dependent name
+        if exec_str.find("%c") != -1:
+            loc = locale.getlocale()[0]
+            name = purl.desktop_file.get_entry_value_from_group("Name[{}]".format(loc))
+            if name == None:
+                name = purl.desktop_file.get_entry_value_from_group("Name[{}]".format(loc.partition("_")[0]))
+            if name == None:
+                exec_str = exec_str.replace('%c', "")
+            else:
+                exec_str = exec_str.replace('%c', name)
 
         # TODO: file name in URI form if not local (vholder?)
         exec_str = exec_str.replace('%k', purl.desktop_file.file_name)
