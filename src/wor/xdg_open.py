@@ -10,6 +10,7 @@ https://wiki.archlinux.org/index.php/Default_Applications
 import logging
 import locale
 import magic
+import mimetypes
 import shlex
 import re
 import io
@@ -114,18 +115,32 @@ def get_mimetype(url, protocol):
         # url = urllib.unquote(url).decode('utf-8') # for python2?
         url = urllib.parse.unquote(url)
 
-        log.info("Unescaped file url target: {}".format(url))
-        # TODO: if no magic, use call "file -b --mime-type {}" to get mime type
-        m = magic.open(magic.MIME_TYPE)
-        m.load()
-        mime_type = m.file(url)
+        # If file doesn't exist try to guess its mime type from its extension
+        # only.
+        if not os.path.exists(url):
+            file_ext = os.path.splitext(url)[1]
+            if len(file_ext) > 1:
+                mimetypes.init()
+                try:
+                    mime_type = mimetypes.types_map[file_ext]
+                except KeyError:
+                    log.debug("mimetypes could not determine mimetype from extension: {}".format(file_ext))
+                    return None
+            else:
+                return None
+        else:
+            log.info("Unescaped file url target: {}".format(url))
+            # TODO: if no magic, use call "file -b --mime-type {}" to get mime type
+            m = magic.open(magic.MIME_TYPE)
+            m.load()
+            #m.setflags(ma)
+            mime_type = m.file(url)
+            m.close()
 
         # Try to fix mime type for certain file types using file extension
         if mime_type == "application/octet-stream":
             if os.path.splitext(url)[1] == ".chm":
                 mime_type = "application/x-chm"
-
-        m.close()
     else:
         # TODO
         mime_type = None
