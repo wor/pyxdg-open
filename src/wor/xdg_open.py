@@ -379,6 +379,7 @@ def xdg_open(urls=None, dryrun=False):
     log.info("Got urls: '{}'".format(urls))
 
     # First create URL objects
+    error_opening_url = False
     purls = []
     for url in urls:
         purl = URL(url)
@@ -395,10 +396,12 @@ def xdg_open(urls=None, dryrun=False):
             desktop_file = get_desktop_file(("MimeType", purl.mime_type))
             if not desktop_file:
                 log.error("Could not find .desktop file associated with mime type '{}'".format(purl.mime_type))
-                return 1
+                error_opening_url = True
+                continue
         else:
             log.error("Could not get mime type for the given url: '{}'".format(purl.url))
-            return 1
+            error_opening_url = True
+            continue
         purl.desktop_file = desktop_file
         log.info("Found desktop file '{}'".format(desktop_file.file_name))
         log.info(str(desktop_file))
@@ -412,7 +415,7 @@ def xdg_open(urls=None, dryrun=False):
     for purls in grouped_purls: # for every group / list of purls
         run_exec(purls, shell=True, dryrun=dryrun)
 
-    return
+    return 0 if not error_opening_url else 1
 
 
 def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None):
