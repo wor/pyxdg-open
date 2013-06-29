@@ -141,10 +141,12 @@ def get_mimetype(url, protocol):
         if mime_type == "application/octet-stream":
             if os.path.splitext(url)[1] == ".chm":
                 mime_type = "application/x-chm"
+    elif protocol == "magnet":
+        mime_type = "application/x-bittorrent"
     else:
-        # TODO
-        mime_type = None
-
+        # XXX: Is there better way to determine mime type form protocol?
+        mime_type = "x-scheme-handler/" + protocol
+        log.info("Defaulted protocol '{}' to mime type: '{}'".format(protocol, mime_type))
     return mime_type
 
 def get_desktop_file_from_mime_list(mime_type):
