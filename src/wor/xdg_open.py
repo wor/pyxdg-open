@@ -124,7 +124,8 @@ def get_mimetype(url, protocol):
                 try:
                     mime_type = mimetypes.types_map[file_ext]
                 except KeyError:
-                    log.debug("mimetypes could not determine mimetype from extension: {}".format(file_ext))
+                    log.debug("mimetypes could not determine mimetype"
+                            " from extension: {}".format(file_ext))
                     return None
             else:
                 return None
@@ -149,7 +150,8 @@ def get_mimetype(url, protocol):
     else:
         # XXX: Is there better way to determine mime type form protocol?
         mime_type = "x-scheme-handler/" + protocol
-        log.info("Defaulted protocol '{}' to mime type: '{}'".format(protocol, mime_type))
+        log.info("Defaulted protocol '{}' to mime type: '{}'"
+                .format(protocol, mime_type))
     return mime_type
 
 def get_desktop_file_from_mime_list(mime_type):
@@ -184,7 +186,8 @@ def get_desktop_file_from_mime_list(mime_type):
         if desktop_file:
             df_fp = get_full_path(desktop_file)
             if not df_fp:
-                log.warn("Could not find desktop file named: {}, mentioned in {}".format(desktop_file, list_file))
+                log.warn("Could not find desktop file named: "
+                        "{}, mentioned in {}".format(desktop_file, list_file))
                 return None
             log.info("Found desktop file from list: {}".format(list_file))
             with open(df_fp) as df:
@@ -206,7 +209,8 @@ def get_desktop_file_by_search(key_value_pair):
     search_key   = key_value_pair[0]
     search_value = key_value_pair[1]
     for dp in CONFIG["desktop_file_paths"]:
-        for root, dirs, files in walk(dp, filefilter=lambda f,_: not f.endswith(".desktop")):
+        for root, dirs, files in walk(
+                dp, filefilter=lambda f,_: not f.endswith(".desktop")):
             for f in files:
                 df_name = os.path.join(root, f)
                 log.debug("Parsing df: {}".format(df_name))
@@ -215,12 +219,14 @@ def get_desktop_file_by_search(key_value_pair):
                         df = df_parser.parse(df_)
                     except wor.tokenizer.TokenizerException as e:
                         log.debug(str(e))
-                        log.error("Parsing desktop file '{}' failed!".format(df_name))
+                        log.error("Parsing desktop file '{}' failed!"
+                                .format(df_name))
                         continue
                 mt_entry = df.get_entry_key_from_group(entry_key=search_key)
                 if mt_entry == None:
                     continue
-                    #log.warn("Desktop file '{}' had no {} entry!".format(df_name, search_key))
+                    #log.warn("Desktop file '{}' had no {} entry!"
+                    #    .format(df_name, search_key))
                     #continue
                 if search_value in mt_entry.value:
                     return df
@@ -297,39 +303,48 @@ def run_exec(purls, shell=True, dryrun=False):
         exec_str = exec_str.replace('%f', shlex.quote(purl.get_f()))
         exec_str = exec_str.replace('%u', shlex.quote(purl.get_url()))
 
-        exec_str = exec_str.replace('%F', " ".join([ shlex.quote(purl.get_f()) for purl in purls]))
-        exec_str = exec_str.replace('%U', " ".join([ shlex.quote(purl.get_url()) for purl in purls]))
+        exec_str = exec_str.replace('%F', " ".join(
+                [ shlex.quote(purl.get_f()) for purl in purls]))
+        exec_str = exec_str.replace('%U', " ".join(
+                [ shlex.quote(purl.get_url()) for purl in purls]))
 
         icon_value = purl.desktop_file.get_entry_value_from_group("Icon")
-        exec_str = exec_str.replace('%i', icon_value if icon_value != None else "")
+        exec_str = exec_str.replace('%i',
+                icon_value if icon_value != None else "")
 
         # Replace locale dependent name
         if exec_str.find("%c") != -1:
             loc = locale.getlocale()[0]
-            name = purl.desktop_file.get_entry_value_from_group("Name[{}]".format(loc))
+            name = purl.desktop_file.get_entry_value_from_group(
+                    "Name[{}]".format(loc))
             if name == None:
-                name = purl.desktop_file.get_entry_value_from_group("Name[{}]".format(loc.partition("_")[0]))
+                name = purl.desktop_file.get_entry_value_from_group(
+                        "Name[{}]".format(loc.partition("_")[0]))
             if name == None:
                 exec_str = exec_str.replace('%c', "")
             else:
                 exec_str = exec_str.replace('%c', shlex.quote(name))
 
         # TODO: file name in URI form if not local (vholder?)
-        exec_str = exec_str.replace('%k', shlex.quote(purl.desktop_file.file_name))
+        exec_str = exec_str.replace(
+                '%k', shlex.quote(purl.desktop_file.file_name))
 
         if purl.desktop_file.get_entry_value_from_group("Terminal"):
             log.info("wrapping exec string with terminal emulator call.")
             if CONFIG["default_terminal_emulator"]:
-                exec_str = CONFIG["default_terminal_emulator"] + " -e " + exec_str
+                exec_str = CONFIG["default_terminal_emulator"] + \
+                        " -e " + exec_str
             else:
-                # If not default terminal emulator specified in the config file then
-                # try to find a terminal emulator from desktop files.
+                # If not default terminal emulator specified in the config file
+                # then try to find a terminal emulator from desktop files.
                 terminal_df = get_desktop_file(("Category", "TerminalEmulator"))
                 if terminal_df:
-                    exec_str = terminal_df.get_entry_value_from_group("Exec") + " -e " + exec_str
+                    exec_str = terminal_df.get_entry_value_from_group("Exec") + \
+                            " -e " + exec_str
                 else:
                     # Just try xterm if no TerminalEmulator desktop file found
-                    log.warn("Could not find terminal emulator .desktop file: defaulting to xterm")
+                    log.warn("Could not find terminal emulator .desktop file:"
+                            " defaulting to xterm")
                     exec_str = "xterm -e " + exec_str
         return exec_str
 
@@ -375,7 +390,9 @@ def xdg_open(urls=None, dryrun=False):
                 grouped_purls.append(group)
                 group = []
             group.append(purls[i])
-            if i+1 >= len(purls) or purls[i].desktop_file.file_name != purls[i+1].desktop_file.file_name:
+            if (i+1 >= len(purls) or
+                    purls[i].desktop_file.file_name !=
+                        purls[i+1].desktop_file.file_name):
                 store = True
         if group:
             grouped_purls.append(group)
@@ -400,11 +417,14 @@ def xdg_open(urls=None, dryrun=False):
             log.info(CONFIG["desktop_file_paths"])
             desktop_file = get_desktop_file(("MimeType", purl.mime_type))
             if not desktop_file:
-                log.error("Could not find .desktop file associated with mime type '{}'".format(purl.mime_type))
+                log.error("Could not find .desktop file"
+                        " associated with mime type '{}'"
+                        .format(purl.mime_type))
                 error_opening_url = True
                 continue
         else:
-            log.error("Could not get mime type for the given url: '{}'".format(purl.url))
+            log.error("Could not get mime type for the given url: '{}'"
+                    .format(purl.url))
             error_opening_url = True
             continue
         purl.desktop_file = desktop_file
@@ -423,7 +443,8 @@ def xdg_open(urls=None, dryrun=False):
     return 0 if not error_opening_url else 1
 
 
-def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None):
+def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(),
+        namespace=None):
     """
     Processes command line arguments.
 
@@ -449,7 +470,9 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
             else: # [v]+
                 v_count = values.count('v')
                 if v_count != len(values):
-                    raise argparse.ArgumentError(self, "Invalid parameter given for verbose: '{}'".format(values))
+                    raise argparse.ArgumentError(self, 
+                            "Invalid parameter given for verbose: '{}'"
+                            .format(values))
                 verbosity_level = v_count+1
 
             # Append to previous verbosity level, this allows multiple "-v"
@@ -469,7 +492,9 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(), namespace=None)
             else: # [q]+
                 q_count = values.count('q')
                 if q_count != len(values):
-                    raise argparse.ArgumentError(self, "Invalid parameter given for quiet: '{}'".format(values))
+                    raise argparse.ArgumentError(self,
+                            "Invalid parameter given for quiet: '{}'"
+                            .format(values))
                 verbosity_level = q_count+1
 
             # Append to previous verbosity level, this allows multiple "-q"
@@ -532,8 +557,8 @@ def read_config_options(config_file_path):
         dict. A mapping from option name to option value.
     """
     def headerless_config_file(config_file):
-        """Generator which wraps config_file and gives DEFAULT section header as the
-        first line.
+        """Generator which wraps config_file and gives DEFAULT section header as
+        the first line.
 
         Parameters:
             config_file: file like object. Open config file.
@@ -554,7 +579,10 @@ def read_config_options(config_file_path):
 
     # Defaults
     defaults = {
-            "desktop_file_paths": "~/.local/share/applications/, /usr/share/applications/, /usr/local/share/applications/",
+            "desktop_file_paths":
+                "~/.local/share/applications/, "
+                "/usr/share/applications/, "
+                "/usr/local/share/applications/",
             "default_terminal_emulator": "",
             }
 
@@ -564,7 +592,8 @@ def read_config_options(config_file_path):
     # Overwrite defaults from config file if it exists
     if os.path.exists(config_file_path):
         with open(config_file_path) as cf:
-            config.read_file(headerless_config_file(cf), source=config_file_path)
+            config.read_file(headerless_config_file(cf),
+                    source=config_file_path)
 
     options_dict = {}
     store_opt(options_dict, "desktop_file_paths", parse_comma_sep_list)
@@ -600,10 +629,9 @@ def main():
 
     # Init module level logger with given verbosity level
     lformat = '%(levelname)s:%(funcName)s:%(lineno)s: %(message)s'
-    logging.basicConfig(level=wor.utils.convert_int_to_logging_level(args.verbose), format=lformat)
-
-    #log = logging.getLogger(__name__)
-    #log.info("Verbosity level set at: {}".format(args.verbose))
+    logging.basicConfig(
+            level=wor.utils.convert_int_to_logging_level(args.verbose),
+            format=lformat)
 
     global CONFIG
     CONFIG = read_config_options(args.config_file)
