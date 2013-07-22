@@ -374,7 +374,11 @@ def xdg_open(urls=None, dryrun=False):
     exec value.
 
     Parameters:
-        - url: str. URL to open.
+        urls: list. URLs to open.
+        dryrun: bool. Don't actually evaluate exec value/command.
+
+    Returns:
+        int. 0 if everything ok nonzero value if not.
     """
     log = logging.getLogger(__name__)
     def group_purls(purls):
