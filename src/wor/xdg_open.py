@@ -139,8 +139,11 @@ def get_mimetype(url, protocol):
 
         # Try to fix mime type for certain file types using file extension
         if mime_type == "application/octet-stream":
-            if os.path.splitext(url)[1] == ".chm":
+            ext = os.path.splitext(url)[1]
+            if ext == ".chm":
                 mime_type = "application/x-chm"
+            elif ext == ".sdf":
+                mime_type = "application/x-spring-demo"
     elif protocol == "magnet":
         mime_type = "application/x-bittorrent"
     else:
