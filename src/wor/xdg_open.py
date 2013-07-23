@@ -7,19 +7,19 @@ http://standards.freedesktop.org/desktop-entry-spec/latest/
 https://wiki.archlinux.org/index.php/Default_Applications
 """
 
-import logging
+import configparser
+import io
 import locale
+import logging
 import magic
 import mimetypes
-import shlex
-import re
-import io
-import sys
 import os
 import os.path
+import re
+import shlex
 import subprocess
+import sys
 import urllib
-import configparser
 
 import wor.desktop_file_parser.parser as df_parser
 import wor.tokenizer
