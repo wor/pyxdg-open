@@ -24,6 +24,7 @@ import urllib
 import wor.desktop_file_parser.parser as df_parser
 import wor.tokenizer
 
+from collections import namedtuple
 from pprint import pprint as pp
 
 
@@ -85,7 +86,7 @@ class URL(object):
         """
         log = logging.getLogger(__name__)
         url = self.url
-        if protocol == "file":
+        if self.protocol == "file":
             # Strip away file protocol
             url = url.replace("file://", "", 1)
             # url = urllib.unquote(url).decode('utf-8') # for python2?
