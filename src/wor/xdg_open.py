@@ -25,7 +25,6 @@ import wor.desktop_file_parser.parser as df_parser
 import wor.tokenizer
 
 from pprint import pprint as pp
-from wor.os import nrwalk as walk
 
 
 # Global config options
@@ -209,7 +208,7 @@ def get_desktop_file_by_search(key_value_pair):
     search_key   = key_value_pair[0]
     search_value = key_value_pair[1]
     for dp in CONFIG["desktop_file_paths"]:
-        for root, dirs, files in walk(
+        for root, dirs, files in nrwalk(
                 dp, filefilter=lambda f,_: not f.endswith(".desktop")):
             for f in files:
                 df_name = os.path.join(root, f)
@@ -445,6 +444,82 @@ def xdg_open(urls=None, dryrun=False):
         run_exec(purls, shell=True, dryrun=dryrun)
 
     return 0 if not error_opening_url else 1
+
+
+def nrwalk(top, mindepth=0, maxdepth=sys.maxsize,
+         dirfilter=None, filefilter=None,
+         topdown=True, onerror=None, followlinks=False):
+    """Non-recursive directory tree generator.
+
+    This is from pyworlib python utility lib.
+
+    Resembles os.walk() with additional min/max depth pruning and additional
+    dirfilter and filefilter functions.
+
+    Dir and file filter functions take two arguments, first is the dir/file and
+    the second is the root directory where the dir/file is located.
+
+    Yields a 3-tuple as does os.walk(): dirpath, dirnames, filenames
+
+    Parameters:
+    - `top`: str.
+    - `mindepth`: int. Minimum depth of descent into subdirs.
+    - `maxdepth`: int. Maximum depth of descent into subdirs.
+    - `dirfilter`: bool func(str, str). If returns True for a dir then the dir
+      is filtered away.
+    - `filefilter`: bool func(str, str). If returns True for a file then the
+      file is filtered away. Receives filename and root path as parameters.
+    - `topdown`: bool. See os.walk().
+    - `onerror`: func. See os.walk().
+    - `followlinks`: bool. See os.walk().
+    """
+    def process_dir(root):
+        try:
+            names = os.listdir(root)
+        except os.error as err:
+            if onerror is not None:
+                onerror(err)
+            return [], []
+
+        dirs, nondirs = [], []
+        for name in names:
+            if isdir(join(root, name)):
+                dirs.append(name)
+            else:
+                nondirs.append(name)
+
+        # Filter nondirs with filefilter and dirs with dirfilter, if filter
+        # returns True for a file # then the file is filtered away
+        if dirfilter:
+            dirs = [ x for x in dirs if not dirfilter(x, root) ]
+        if filefilter:
+            nondirs = [ x for x in nondirs if not filefilter(x, root) ]
+
+        return dirs, nondirs
+
+    islink, join, isdir = os.path.islink, os.path.join, os.path.isdir
+
+    Dir_node = namedtuple('Dir_node', [ 'root', 'dirs', 'nondirs' ])
+    travelsal_stack = list()
+    travelsal_stack.append(Dir_node(top, *process_dir(top)))
+    if maxdepth >= len(travelsal_stack)-1 >= mindepth:
+        yield travelsal_stack[0]
+    while True:
+        if not travelsal_stack:
+            break
+
+        # TODO: implement followlinks option
+        if travelsal_stack[len(travelsal_stack)-1].dirs and \
+                maxdepth >= len(travelsal_stack):
+            _new_root = join(travelsal_stack[len(travelsal_stack)-1].root,
+                    travelsal_stack[len(travelsal_stack)-1].dirs.pop())
+            travelsal_stack.append(Dir_node(_new_root, *process_dir(_new_root)))
+            if len(travelsal_stack)-1 >= mindepth:
+                yield travelsal_stack[len(travelsal_stack)-1]
+        else:
+            travelsal_stack.pop()
+
+    return
 
 
 def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(),
