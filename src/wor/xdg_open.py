@@ -8,7 +8,6 @@ https://wiki.archlinux.org/index.php/Default_Applications
 """
 
 import configparser
-import io
 import locale
 import logging
 import magic
@@ -25,7 +24,6 @@ import wor.desktop_file_parser.parser as df_parser
 import wor.tokenizer
 
 from collections import namedtuple
-from pprint import pprint as pp
 
 
 # Global config options
@@ -122,13 +120,13 @@ class URL(object):
                     mime_type = "application/x-chm"
                 elif ext == ".sdf":
                     mime_type = "application/x-spring-demo"
-        elif protocol == "magnet":
+        elif self.protocol == "magnet":
             mime_type = "application/x-bittorrent"
         else:
             # XXX: Is there better way to determine mime type form protocol?
-            mime_type = "x-scheme-handler/" + protocol
+            mime_type = "x-scheme-handler/" + self.protocol
             log.info("Defaulted protocol '{}' to mime type: '{}'"
-                    .format(protocol, mime_type))
+                    .format(self.protocol, mime_type))
         return mime_type
 
     # Getters
@@ -314,7 +312,7 @@ def run_exec(purls, shell=True, dryrun=False):
 
     """
     log = logging.getLogger(__name__)
-    def get_prepared_exec_str(purl, purls):
+    def get_prepared_exec_str(purl):
         """Replaces exec_str fields (%x) and wraps with terminal emulator
         command if terminal True.
         """
@@ -389,9 +387,9 @@ def run_exec(purls, shell=True, dryrun=False):
             exec_str.find('%u') != 1 and \
             len(purls) > 1:
         for purl in purls:
-            exec_strs.append(get_prepared_exec_str(purl, purls))
+            exec_strs.append(get_prepared_exec_str(purl))
     else:
-        exec_strs.append(get_prepared_exec_str(purls[0], purls))
+        exec_strs.append(get_prepared_exec_str(purls[0]))
 
     log.info("Final exec string(s): {}".format(repr(exec_strs)))
     for es in exec_strs:
