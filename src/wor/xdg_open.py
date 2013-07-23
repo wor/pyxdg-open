@@ -37,6 +37,9 @@ class URL(object):
         """
         Parameters:
             url: str. URL as string.
+            protocol: str.
+            target: str.
+            mime_type: str. Mime type as string.
         """
         self.url = url
         if not protocol or not target:
@@ -53,6 +56,8 @@ class URL(object):
     def __get_protocol_and_target__(self, url_str):
         """Tries to guess urls protocol.
 
+        Parameters:
+            url_str: str. URL.
         Returns:
             (str, str). Tuple of protocol and rest of the url without protocol.
         """
@@ -80,6 +85,10 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None):
     If mime_type_find is given then return just matching desktop file or None if
     not found. If mime_type_find is not given or evaluates to False then return
     all mime type desktop file pairs as a dict.
+
+    Parameters:
+        desktop_list_fn:
+        miem_type_find:
     """
     mt_df_re = re.compile(
             r"""
@@ -106,6 +115,9 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None):
 
 def get_mimetype(url, protocol):
     """Returns the mime type of given url.
+
+    Parameters:
+        protocol:
     """
     log = logging.getLogger(__name__)
     if protocol == "file":
@@ -199,6 +211,9 @@ def get_desktop_file_by_search(key_value_pair):
     Desktop file which contains given key value pair is returned. Desktop files
     are returned as DesktopFile objects.
 
+    Parameters:
+        key_value_pair: (str, str).
+
     Returns:
         DesktopFile().
     """
@@ -247,7 +262,6 @@ def get_desktop_file(key_value_pair=("","")):
     The first desktop file found is returned.
 
     Parameters:
-        mime_type: str.
         key_value_pair: (str, str).
     """
     log = logging.getLogger(__name__)
@@ -279,6 +293,12 @@ def run_exec(purls, shell=True, dryrun=False):
         double quote character, backtick character ("`"), dollar sign ("$") and backslash character ("\")
 
     TODO: shell=False not yet implemented, requires exec value parsing.
+
+    Parameters:
+        purls.
+        shell. bool.
+        dryrun. bool.
+
     """
     log = logging.getLogger(__name__)
     def get_prepared_exec_str(purl, purls):
