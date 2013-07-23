@@ -37,45 +37,105 @@ class URL(object):
         """
         Parameters:
             url: str. URL as string.
-            protocol: str.
-            target: str.
-            mime_type: str. Mime type as string.
+            protocol: str. Optional protocol of the URL, if not given it's
+                parsed from the `url`.
+            target: str. Optional target of the URL, if not given ...
+            mime_type: str. Optional mime type as string, if not given ...
         """
         self.url = url
         if not protocol or not target:
-            p, t = self.__get_protocol_and_target__(url)
+            p, t = self.__get_protocol_and_target__()
             self.protocol = p if not protocol else protocol
             self.target   = t if not target else target
         else:
             self.protocol = protocol
-            self.target = target
-        self.mime_type = mime_type
+            self.target   = target
+        self.mime_type = self.__get_mimetype__() \
+                if not mime_type else mime_type
+
         self.desktop_file = None
     def __repr__(self):
-        return "<{}|{}|{}>".format(self.url, self.protocol, self.target)
-    def __get_protocol_and_target__(self, url_str):
-        """Tries to guess urls protocol.
+        return "<{}|{}|{}|{}|{}>".format(self.url, self.protocol, self.target,
+                self.mime_type, self.desktop_file)
+    def __get_protocol_and_target__(self):
+        """Tries to guess ´self.url´ URLs protocol.
 
-        Parameters:
-            url_str: str. URL.
         Returns:
-            (str, str). Tuple of protocol and rest of the url without protocol.
+            (str, str). Tuple of protocol and rest of the url without protocol,
+                or if not found tuple of None.
         """
-        if url_str.startswith("/"):
-            return "file", url_str
+        if self.url.startswith("/"):
+            return "file", self.url
 
-        m = re.match(r"([a-z]+)://", url_str, re.I)
+        m = re.match(r"([a-z]+)://", self.url, re.I)
         if m:
             protocol = m.groups()[0].lower()
-            target = urllib.parse.unquote(url_str[m.span()[1]:])
+            target = urllib.parse.unquote(self.url[m.span()[1]:])
             return protocol, target
         else:
             # Treat url as relative file
-            return "file", os.path.join(os.getcwd(), url_str)
+            return "file", os.path.join(os.getcwd(), self.url)
         return (None, None)
+    def __get_mimetype__(self):
+        """Tries to guess ´url´ URLs mime type.
+
+        Returns:
+            str/None. The mime type of the ´self.url´ URL. Or None if mime type
+                could not be determined.
+        """
+        log = logging.getLogger(__name__)
+        url = self.url
+        if protocol == "file":
+            # Strip away file protocol
+            url = url.replace("file://", "", 1)
+            # url = urllib.unquote(url).decode('utf-8') # for python2?
+            url = urllib.parse.unquote(url)
+
+            # If file doesn't exist try to guess its mime type from its extension
+            # only.
+            if not os.path.exists(url):
+                file_ext = os.path.splitext(url)[1]
+                if len(file_ext) > 1:
+                    mimetypes.init()
+                    try:
+                        mime_type = mimetypes.types_map[file_ext]
+                    except KeyError:
+                        log.debug("mimetypes could not determine mimetype"
+                                " from extension: {}".format(file_ext))
+                        return None
+                else:
+                    return None
+            else:
+                log.info("Unescaped file url target: {}".format(url))
+                # TODO: if no magic, use call "file -b --mime-type {}" to get mime type
+                m = magic.open(magic.MIME_TYPE)
+                m.load()
+                #m.setflags(ma)
+                mime_type = m.file(url)
+                m.close()
+
+            # Try to fix mime type for certain file types using file extension
+            if mime_type == "application/octet-stream":
+                ext = os.path.splitext(url)[1]
+                if ext == ".chm":
+                    mime_type = "application/x-chm"
+                elif ext == ".sdf":
+                    mime_type = "application/x-spring-demo"
+        elif protocol == "magnet":
+            mime_type = "application/x-bittorrent"
+        else:
+            # XXX: Is there better way to determine mime type form protocol?
+            mime_type = "x-scheme-handler/" + protocol
+            log.info("Defaulted protocol '{}' to mime type: '{}'"
+                    .format(protocol, mime_type))
+        return mime_type
+
+    # Getters
+    def get_mimetype(self):
+        return self.mime_type
     def get_url(self):
         return self.url
-    def get_f(self):
+    def get_target(self):
         return self.target
 
 
@@ -87,8 +147,10 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None):
     all mime type desktop file pairs as a dict.
 
     Parameters:
-        desktop_list_fn:
-        miem_type_find:
+        desktop_list_fn: str. Path of a desktop list file.
+        mime_type_find: str. Mime type to find from given desktop list file.
+    Returns:
+        dict/str/None. See doc string.
     """
     mt_df_re = re.compile(
             r"""
@@ -112,58 +174,6 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None):
                 mime_type_desktop_map[mime_type] = desktop_file
     return mime_type_desktop_map if mime_type_desktop_map else None
 
-
-def get_mimetype(url, protocol):
-    """Returns the mime type of given url.
-
-    Parameters:
-        protocol:
-    """
-    log = logging.getLogger(__name__)
-    if protocol == "file":
-        # Strip away file protocol
-        url = url.replace("file://", "", 1)
-        # url = urllib.unquote(url).decode('utf-8') # for python2?
-        url = urllib.parse.unquote(url)
-
-        # If file doesn't exist try to guess its mime type from its extension
-        # only.
-        if not os.path.exists(url):
-            file_ext = os.path.splitext(url)[1]
-            if len(file_ext) > 1:
-                mimetypes.init()
-                try:
-                    mime_type = mimetypes.types_map[file_ext]
-                except KeyError:
-                    log.debug("mimetypes could not determine mimetype"
-                            " from extension: {}".format(file_ext))
-                    return None
-            else:
-                return None
-        else:
-            log.info("Unescaped file url target: {}".format(url))
-            # TODO: if no magic, use call "file -b --mime-type {}" to get mime type
-            m = magic.open(magic.MIME_TYPE)
-            m.load()
-            #m.setflags(ma)
-            mime_type = m.file(url)
-            m.close()
-
-        # Try to fix mime type for certain file types using file extension
-        if mime_type == "application/octet-stream":
-            ext = os.path.splitext(url)[1]
-            if ext == ".chm":
-                mime_type = "application/x-chm"
-            elif ext == ".sdf":
-                mime_type = "application/x-spring-demo"
-    elif protocol == "magnet":
-        mime_type = "application/x-bittorrent"
-    else:
-        # XXX: Is there better way to determine mime type form protocol?
-        mime_type = "x-scheme-handler/" + protocol
-        log.info("Defaulted protocol '{}' to mime type: '{}'"
-                .format(protocol, mime_type))
-    return mime_type
 
 def get_desktop_file_from_mime_list(mime_type):
     """
@@ -204,6 +214,7 @@ def get_desktop_file_from_mime_list(mime_type):
             with open(df_fp) as df:
                 return df_parser.parse(df)
     return None
+
 
 def get_desktop_file_by_search(key_value_pair):
     """Finds desktop file by searching from CONFIG["desktop_file_paths"].
@@ -250,6 +261,7 @@ def get_desktop_file_by_search(key_value_pair):
 def get_desktop_file(key_value_pair=("","")):
     """Finds desktop file by key value pair.
 
+    TODO: Memory cache values per run.
     TODO: Support cached desktop file format.
     TODO: Document where desktop files are searched for.
 
@@ -319,11 +331,11 @@ def run_exec(purls, shell=True, dryrun=False):
         exec_str = exec_str.replace('%v', "")
         exec_str = exec_str.replace('%m', "")
 
-        exec_str = exec_str.replace('%f', shlex.quote(purl.get_f()))
+        exec_str = exec_str.replace('%f', shlex.quote(purl.get_target()))
         exec_str = exec_str.replace('%u', shlex.quote(purl.get_url()))
 
         exec_str = exec_str.replace('%F', " ".join(
-                [ shlex.quote(purl.get_f()) for purl in purls]))
+                [ shlex.quote(purl.get_target()) for purl in purls]))
         exec_str = exec_str.replace('%U', " ".join(
                 [ shlex.quote(purl.get_url()) for purl in purls]))
 
@@ -388,13 +400,15 @@ def run_exec(purls, shell=True, dryrun=False):
 
 
 def xdg_open(urls=None, dryrun=False):
-    """
+    """Find and use found program to open given URLs.
+
     Tries to find desktop object associated with given url and evaluate it's
     exec value.
 
     Parameters:
-        urls: list. URLs to open.
-        dryrun: bool. Don't actually evaluate exec value/command.
+        urls: list[str]. URLs to open as list of strings.
+        dryrun: bool. Don't actually evaluate exec value/command. Useful for
+            testing with high verbosity level.
 
     Returns:
         int. 0 if everything ok nonzero value if not.
@@ -402,6 +416,9 @@ def xdg_open(urls=None, dryrun=False):
     log = logging.getLogger(__name__)
     def group_purls(purls):
         """Groups purls with same desktop_file together.
+
+        Returns:
+            [[URL]].
         """
         purls.sort(key=lambda k: k.desktop_file.file_name)
         grouped_purls = []
@@ -423,20 +440,18 @@ def xdg_open(urls=None, dryrun=False):
 
     log.info("Got urls: '{}'".format(urls))
 
-    # First create URL objects
+    # 1. Create URL objects
+    # 2. Find related .desktop files, one per URL object.
     error_opening_url = False
     purls = []
     for url in urls:
         purl = URL(url)
         log.info("'{}' protocol was: '{}'".format(purl.url, purl.protocol))
         log.info("'{}' target was: '{}'".format(purl.url, purl.target))
-
-        # Second find mime type of the url
-        purl.mime_type = get_mimetype(purl.url, purl.protocol)
         log.info("'{}' mime type was: '{}'".format(purl.url, purl.mime_type))
 
         if purl.mime_type:
-            # Third find .desktop file handling the mime_type
+            # Find .desktop file handling the URLs mime_type
             log.info(CONFIG["desktop_file_paths"])
             desktop_file = get_desktop_file(("MimeType", purl.mime_type))
             if not desktop_file:
@@ -455,11 +470,11 @@ def xdg_open(urls=None, dryrun=False):
         log.info(str(desktop_file))
         purls.append(purl)
 
-    # Group urls with same desktop_file
+    # Group URLs with same desktop_file
     grouped_purls = group_purls(purls)
 
     # TODO: Are there any other possible actions, beside running exec?
-    # Run exec should have all urls with same desktop_file
+    # Run exec should have all URLs with same desktop_file
     for purls in grouped_purls: # for every group / list of purls
         run_exec(purls, shell=True, dryrun=dryrun)
 
@@ -471,7 +486,8 @@ def nrwalk(top, mindepth=0, maxdepth=sys.maxsize,
          topdown=True, onerror=None, followlinks=False):
     """Non-recursive directory tree generator.
 
-    This is from pyworlib python utility lib.
+    This is from pyworlib python utility lib, Copyright (C) Esa Määttä 2011,
+    license GPL3.
 
     Resembles os.walk() with additional min/max depth pruning and additional
     dirfilter and filefilter functions.
