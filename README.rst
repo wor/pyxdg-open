@@ -17,6 +17,12 @@ Example config file (by default located at:
     # TerminalEmulator as Category will be used.
     default_terminal_emulator = urxtvc
 
+Archlinux PKGBUILD
+------------------
+
+PKGBUILD files for pyxdg-open and it's dependencies can be found from my
+`abs-repo <https://github.com/wor/abs-repo>`_:
+`pyxdg-open-git <https://github.com/wor/abs-repo/tree/master/pyxdg-open-git>`_
 
 Depends
 -------
