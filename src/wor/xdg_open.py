@@ -31,9 +31,10 @@ CONFIG = {}
 
 
 class URL(object):
-    """Represents xdg-opens input as class."""
+    """Represents xdg-opens input (an URL) as a class."""
     def __init__(self, url, protocol="", target="", mime_type=""):
-        """
+        """URL initialization.
+
         Parameters:
             url: str. URL as string.
             protocol: str. Optional protocol of the URL, if not given it's
@@ -175,7 +176,11 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None):
 
 
 def get_desktop_file_from_mime_list(mime_type):
-    """
+    """Find desktop file from a mime list file.
+
+    Parameters:
+        mime_type: str. Mime type as string.
+
     Returns:
         DesktopFile().
     """
@@ -295,21 +300,17 @@ def get_desktop_file(key_value_pair=("","")):
     return df
 
 
-def run_exec(purls, shell=True, dryrun=False):
+def run_exec(purls, dryrun=False):
     """Evaluates/Runs desktop files Exec value.
 
     http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#exec-variables
 
-    Should be escaped inside double quotes
-        double quote character, backtick character ("`"), dollar sign ("$") and backslash character ("\")
-
-    TODO: shell=False not yet implemented, requires exec value parsing.
+    Should be escaped inside double quotes, double quote character, backtick
+    character ("`"), dollar sign ("$") and backslash character ("\")
 
     Parameters:
-        purls.
-        shell. bool.
-        dryrun. bool.
-
+        purls. [URL]. List of URLs.
+        dryrun. bool. If True Don't actually evaluate anything.
     """
     log = logging.getLogger(__name__)
     def get_prepared_exec_str(purl):
@@ -475,7 +476,7 @@ def xdg_open(urls=None, dryrun=False):
     # TODO: Are there any other possible actions, beside running exec?
     # Run exec should have all URLs with same desktop_file
     for purls in grouped_purls: # for every group / list of purls
-        run_exec(purls, shell=True, dryrun=dryrun)
+        run_exec(purls, dryrun=dryrun)
 
     return 0 if not error_opening_url else 1
 
@@ -559,13 +560,11 @@ def nrwalk(top, mindepth=0, maxdepth=sys.maxsize,
 
 def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(),
         namespace=None):
-    """
-    Processes command line arguments.
+    """Processes command line arguments.
 
     Returns a namespace with all arguments.
 
     Parameters:
-
         inputs: list. List of arguments to be parsed.
         parent_parsers: list. List of parent parsers which are used as base.
         namespace: namespace. Namespace where parsed options are added. Can be
