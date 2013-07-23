@@ -381,7 +381,7 @@ def run_exec(purls, dryrun=False):
 
     exec_str = purls[0].desktop_file.get_entry_value_from_group("Exec")
     exec_strs = []
-    log.info("run_exec: Shell: {} Exec: {}".format(shell, exec_str))
+    log.info("run_exec: {}".format(exec_str))
 
     # If we have %f or %u and length(purls) > 1, then do multiple exec calls
     if exec_str.find('%f') != 1 and \
