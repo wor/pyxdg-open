@@ -54,7 +54,7 @@ Similar programs
 * `mimi <https://github.com/taylorchu/mimi>`_
 * `buskin <https://github.com/supplantr/busking>`_
 
-`list of xdg-open replacements <https://wiki.archlinux.org/index.php/Xdg-open#xdg-open_replacements>`_
+`List of xdg-open replacements <https://wiki.archlinux.org/index.php/Xdg-open#xdg-open_replacements>`_.
 
 TODO
 ----
