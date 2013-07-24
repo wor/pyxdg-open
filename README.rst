@@ -2,7 +2,10 @@ pyxdg-open
 ==========
 
 Python xdg-open (from xdg-utils_) clone. Basically determines how to open and
-then opens given URL using system desktop files.
+then opens given URL using system desktop files. Motivation for this is to
+provide file opener which works well without a popular desktop environment and
+still supports `Desktop Entry Specification
+<http://standards.freedesktop.org/desktop-entry-spec/latest/>`_.
 
 Example config file (by default located at:
 ~/.config/pyxdg-open/pyxdg-open.conf)::
@@ -33,8 +36,8 @@ PKGBUILD files for pyxdg-open and it's dependencies can be found from my
 `abs-repo <https://github.com/wor/abs-repo>`_:
 `pyxdg-open-git <https://github.com/wor/abs-repo/tree/master/pyxdg-open-git>`_
 
-Depends
--------
+Dependecies
+-----------
 
 * `desktop_file_parser <https://github.com/wor/desktop_file_parser>`_
 * `tokenizer <https://github.com/wor/tokenizer>`_
