@@ -29,6 +29,12 @@ If list_files is defined, desktop files are first searched from existing
 list_files located in the ´desktop_file_paths´. Second the desktop files are
 searched normally from the defined ´desktop_file_paths´.
 
+If ´desktop_file_paths´ are searched for the desktop file then the first desktop
+file which has the matching mime type listed is selected. If there are many
+desktop files which match certain mime type and one desktop file is preferred,
+then the option is to add the mime type, desktop file pair to mimeapps.list or
+defaults.list file.
+
 Archlinux PKGBUILD
 ------------------
 
@@ -47,6 +53,8 @@ Similar programs
 
 * `mimi <https://github.com/taylorchu/mimi>`_
 * `buskin <https://github.com/supplantr/busking>`_
+
+`list of xdg-open replacements <https://wiki.archlinux.org/index.php/Xdg-open#xdg-open_replacements>`_
 
 TODO
 ----
