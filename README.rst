@@ -13,9 +13,18 @@ Example config file (by default located at:
                           /usr/share/applications/,
                           /usr/local/share/applications/
 
+    # List files under desktop_file_paths which are first searched for desktop
+    # files. If this empty no list files are used.
+    list_files = mimeapps.list,
+                 defaults.list
+
     # If default terminal emulator is not specified then first desktop file with
     # TerminalEmulator as Category will be used.
-    default_terminal_emulator = urxtvc
+    #default_terminal_emulator = urxtvc
+
+If list_files is defined, desktop files are first searched from existing
+list_files located in the ´desktop_file_paths´. Second the desktop files are
+searched normally from the defined ´desktop_file_paths´.
 
 Archlinux PKGBUILD
 ------------------
@@ -39,7 +48,7 @@ Similar programs
 TODO
 ----
 
-* Document desktop list file usage
+* Document differences to similar programs
 * Add info about easy installation
 * Read desktop cache files
 * Add missing xdg-open functionality

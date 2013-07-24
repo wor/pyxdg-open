@@ -24,10 +24,23 @@ import wor.desktop_file_parser.parser as df_parser
 import wor.tokenizer
 
 from collections import namedtuple
+from collections import OrderedDict
 
 
-# Global config options
+# Global config options (stored here after parsing)
 CONFIG = {}
+
+# Default config options
+DEFAULT_CONFIG = OrderedDict(sorted({
+        "list_files":
+            "mimeapps.list, "
+            "defaults.list",
+        "desktop_file_paths":
+            "~/.local/share/applications/, "
+            "/usr/share/applications/, "
+            "/usr/local/share/applications/",
+        "default_terminal_emulator": "",
+        }.items(), key=lambda t: t[0]))
 
 
 class URL(object):
@@ -175,8 +188,10 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None):
     return mime_type_desktop_map if mime_type_desktop_map else None
 
 
-def get_desktop_file_from_mime_list(mime_type):
+def get_desktop_file_from_mime_list(mime_type, list_files):
     """Find desktop file from a mime list file.
+
+    Desktop file paths and list files are read from global CONFIG.
 
     Parameters:
         mime_type: str. Mime type as string.
@@ -191,10 +206,17 @@ def get_desktop_file_from_mime_list(mime_type):
             if os.path.isfile(test_desktop_file):
                 return test_desktop_file
         return None
-    def check_file(list_files):
-        """
+    def check_list_files():
+        """Gets desktop file name from a list file.
+
+        Checks if list_files exist in the current desktop file path (dp) and if
+        it's so then tries to find matchin desktop file name for the mime_type.
+
+        Uses:
+            dp, list_files, mime_type
+
         Returns:
-            str. Desktop file name.
+            str. Desktop file name matching mime_type.
         """
         for lf in list_files:
             p = os.path.join(dp, lf)
@@ -207,7 +229,8 @@ def get_desktop_file_from_mime_list(mime_type):
 
     # First parse desktop file lists, and try to find desktop file there
     for dp in CONFIG["desktop_file_paths"]:
-        desktop_file, list_file = check_file(["mimeapps.list", "defaults.list"])
+        # TODO: document and add configuration option
+        desktop_file, list_file = check_list_files()
         if desktop_file:
             df_fp = get_full_path(desktop_file)
             if not df_fp:
@@ -283,10 +306,10 @@ def get_desktop_file(key_value_pair=("","")):
     log = logging.getLogger(__name__)
 
     df = None
-    if key_value_pair[0] == "MimeType":
-        # If MimeType key then search first from MimeType/Desktop file list
-        # files
-        df = get_desktop_file_from_mime_list(key_value_pair[1])
+    # If MimeType key then search first from MimeType/Desktop file list files.
+    # Configuration option list files must also be specified for this.
+    if key_value_pair[0] == "MimeType" and CONFIG["list_files"]:
+        df = get_desktop_file_from_mime_list(key_value_pair[1], CONFIG["list_files"])
         if df:
             # TODO: transform to absolute dir if needed
             log.debug("Found df from MimeType/desktop file list.")
@@ -558,6 +581,17 @@ def nrwalk(top, mindepth=0, maxdepth=sys.maxsize,
     return
 
 
+def parse_comma_sep_list(csl_str):
+    """Parses comma separated list string to a list.
+
+    Parameters:
+        cls_str: str. Comma separated list as a string.
+    """
+    sl = csl_str.split(",")
+    sl = [ os.path.expanduser(s.strip()) for s in sl ]
+    return sl
+
+
 def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(),
         namespace=None):
     """Processes command line arguments.
@@ -596,7 +630,7 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(),
     class Quiet_action(argparse.Action):
         """Argparse action: Cumulative quiet switch '-q' counter"""
         def __call__(self, parser, namespace, values, option_string=None):
-            """qalues can be None, "q", "qq", "qqq" or [0-9]+
+            """Values can be None, "q", "qq", "qqq" or [0-9]+
             """
             if values is None:
                 verbosity_level = 1
@@ -617,6 +651,23 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(),
                 org_verbosity = 0
             verbosity_level = org_verbosity - verbosity_level
             setattr(namespace, self.dest, verbosity_level)
+    class Print_default_config_action(argparse.Action):
+        """Argparse action: print default config and exit."""
+        def __call__(self, parser, namespace, values=None, option_string=None):
+            sep = " = "
+            for k in DEFAULT_CONFIG.keys():
+                print(k + sep, end="")
+                if DEFAULT_CONFIG[k].find(", ") != -1:
+                    csl = parse_comma_sep_list(DEFAULT_CONFIG[k])
+                    print(csl[0] + ",")
+                    for i in range(1,len(csl)):
+                        print((len(k) + len(sep))*" " + csl[i], end="")
+                        if i < len(csl)-1:
+                            print(",", end="")
+                        print()
+                else:
+                    print(DEFAULT_CONFIG[k])
+            argparse.ArgumentParser.exit(0)
 
     # initialize the parser object:
     parser = argparse.ArgumentParser(
@@ -652,6 +703,13 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(),
         help="Don't evaluate final exec value.")
 
     parser.add_argument(
+        '--print-default-config',
+        nargs=0,
+        default=argparse.SUPPRESS,
+        action=Print_default_config_action,
+        help="Print default config used and exit.")
+
+    parser.add_argument(
         'urls',
         nargs='+',
         metavar='URL',
@@ -680,35 +738,27 @@ def read_config_options(config_file_path):
         # Next yield the actual config file next
         for line in config_file:
             yield line
-    def parse_comma_sep_list(csl_str):
-        sl = csl_str.split(",")
-        sl = [ os.path.expanduser(s.strip()) for s in sl ]
-        return sl
     def store_opt(opts, opt_name, proc_func=None):
-        opt = config.get("DEFAULT", opt_name, fallback=defaults[opt_name])
+        """Store options to opts.
+
+        DEFAULT_CONFIG provides default config used as fallback.
+        """
+        opt = config.get("DEFAULT", opt_name, fallback=DEFAULT_CONFIG[opt_name])
         opts[opt_name] = opt if not proc_func else proc_func(opt)
 
     config = configparser.ConfigParser()
 
-    # Defaults
-    defaults = {
-            "desktop_file_paths":
-                "~/.local/share/applications/, "
-                "/usr/share/applications/, "
-                "/usr/local/share/applications/",
-            "default_terminal_emulator": "",
-            }
-
-    # Parse config file
     config_file_path = os.path.expanduser(config_file_path)
 
-    # Overwrite defaults from config file if it exists
+    # Parse config file to the config
     if os.path.exists(config_file_path):
         with open(config_file_path) as cf:
             config.read_file(headerless_config_file(cf),
                     source=config_file_path)
 
+    # Read options from config to options_dict
     options_dict = {}
+    store_opt(options_dict, "list_files", parse_comma_sep_list)
     store_opt(options_dict, "desktop_file_paths", parse_comma_sep_list)
     store_opt(options_dict, "default_terminal_emulator")
     return options_dict
