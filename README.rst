@@ -47,6 +47,8 @@ Dependecies
 
 * `desktop_file_parser <https://github.com/wor/desktop_file_parser>`_
 * `tokenizer <https://github.com/wor/tokenizer>`_
+* `python-magic <http://darwinsys.com/file/>`_ >> `Arclinux AUR package
+  <https://aur.archlinux.org/packages/python-magic/>`_
 
 Similar programs
 ----------------
@@ -54,7 +56,7 @@ Similar programs
 * `mimi <https://github.com/taylorchu/mimi>`_
 * `buskin <https://github.com/supplantr/busking>`_
 
-`List of xdg-open replacements <https://wiki.archlinux.org/index.php/Xdg-open#xdg-open_replacements>`_.
+`List of xdg-open replacements on Archlinux wiki <https://wiki.archlinux.org/index.php/Xdg-open#xdg-open_replacements>`_.
 
 TODO
 ----
