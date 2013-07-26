@@ -47,10 +47,14 @@ Dependecies
 
 * `desktop_file_parser <https://github.com/wor/desktop_file_parser>`_
 * `tokenizer <https://github.com/wor/tokenizer>`_
+
+Optional Dependecies
+--------------------
+
 * `python-magic <http://darwinsys.com/file/>`_ >> `Arclinux AUR package
   <https://aur.archlinux.org/packages/python-magic/>`_
 
-Similar programs
+Similar Programs
 ----------------
 
 * `mimi <https://github.com/taylorchu/mimi>`_

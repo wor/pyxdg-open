@@ -26,8 +26,7 @@ https://wiki.archlinux.org/index.php/Default_Applications
 import configparser
 import locale
 import logging
-import magic
-import mimetypes
+import mimetypes as MT
 import os
 import os.path
 import re
@@ -35,6 +34,12 @@ import shlex
 import subprocess
 import sys
 import urllib
+
+HAS_MAGIC = True
+try:
+    import magic
+except ImportError:
+    HAS_MAGIC = False
 
 import wor.desktop_file_parser.parser as df_parser
 import wor.tokenizer
@@ -136,12 +141,13 @@ class URL(object):
                     return None
             else:
                 log.info("Unescaped file url target: {}".format(url))
-                # TODO: if no magic, use call "file -b --mime-type {}" to get mime type
-                m = magic.open(magic.MIME_TYPE)
-                m.load()
-                #m.setflags(ma)
-                mime_type = m.file(url)
-                m.close()
+                mime_type = MT.guess_type(url)[0]
+                if HAS_MAGIC: # Debug the differences between mimetypes and magic
+                    mime_type_mm = MM.file(url)
+                    if mime_type != mime_type_mm:
+                        log.debug("-------- mimetypes differed from magic --------")
+                        log.debug("{} != {}".format(mime_type, mime_type_mm))
+                        log.debug("-----------------------------------------------")
 
             # Try to fix mime type for certain file types using file extension
             if mime_type == "application/octet-stream":
@@ -817,5 +823,13 @@ def main():
 
     del args.config_file
     del args.verbose
+
+    # Init mimetypes
+    global MM
+    global MT
+    if HAS_MAGIC:
+        MM = magic.open(magic.MIME_TYPE)
+        MM.load()
+    MT.init()
 
     return xdg_open(**args.__dict__)
