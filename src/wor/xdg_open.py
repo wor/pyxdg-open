@@ -312,9 +312,9 @@ def get_desktop_file(key_value_pair=("","")):
 
     TODO: Memory cache values per run.
     TODO: Support cached desktop file format.
-    TODO: Document where desktop files are searched for.
 
-    Finds desktop file which matches given key_value_pair.
+    Finds desktop file which matches given key_value_pair. First from list files
+    and then by systematic desktop file search.
 
     For example if given key_value_pair is ("Category","TerminalEmulator"), then
     a desktop file which contains "TerminalEmulator" value in "Category" key is
