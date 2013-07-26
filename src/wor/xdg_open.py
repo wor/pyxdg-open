@@ -543,16 +543,17 @@ def nrwalk(top, mindepth=0, maxdepth=sys.maxsize,
     Yields a 3-tuple as does os.walk(): dirpath, dirnames, filenames
 
     Parameters:
-    - `top`: str.
-    - `mindepth`: int. Minimum depth of descent into subdirs.
-    - `maxdepth`: int. Maximum depth of descent into subdirs.
-    - `dirfilter`: bool func(str, str). If returns True for a dir then the dir
-      is filtered away.
-    - `filefilter`: bool func(str, str). If returns True for a file then the
-      file is filtered away. Receives filename and root path as parameters.
-    - `topdown`: bool. See os.walk().
-    - `onerror`: func. See os.walk().
-    - `followlinks`: bool. See os.walk().
+        top: str.
+        mindepth: int. Minimum depth of descent into subdirs.
+        maxdepth: int. Maximum depth of descent into subdirs.
+        dirfilter: bool func(str, str). If returns True for a dir then the dir
+            is filtered away.
+        filefilter: bool func(str, str). If returns True for a file then the
+            file is filtered away. Receives filename and root path as
+            parameters.
+        topdown: bool. See os.walk().
+        onerror: func. See os.walk().
+        followlinks: bool. See os.walk().
     """
     def process_dir(root):
         try:
