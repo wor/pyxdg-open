@@ -2,10 +2,13 @@ pyxdg-open
 ==========
 
 Python xdg-open (from xdg-utils_) clone. Basically determines how to open and
-then opens given URL using system desktop files. Motivation for this is to
-provide file opener which works well without a popular desktop environment and
-still supports `Desktop Entry Specification
-<http://standards.freedesktop.org/desktop-entry-spec/latest/>`_.
+then opens given URL using system desktop files.
+
+Motivation for this is to provide file opener which works well without a popular
+desktop environment and still supports `Desktop Entry Specification`_. Also it's
+good to provide something which doesn't have plethora of escaping or other input
+related bugs, e.g. `xdg-open: be more paranoid in escaping`_. This is much
+easier and cleaner to achieve in Python than Bash.
 
 Example config file (by default located at:
 ~/.config/pyxdg-open/pyxdg-open.conf)::
@@ -42,14 +45,14 @@ PKGBUILD files for pyxdg-open and it's dependencies can be found from my
 `abs-repo <https://github.com/wor/abs-repo>`_:
 `pyxdg-open-git <https://github.com/wor/abs-repo/tree/master/pyxdg-open-git>`_
 
-Dependecies
------------
+Dependencies
+------------
 
 * `desktop_file_parser <https://github.com/wor/desktop_file_parser>`_
 * `tokenizer <https://github.com/wor/tokenizer>`_
 
-Optional Dependecies
---------------------
+Optional Dependencies
+---------------------
 
 * `python-magic <http://darwinsys.com/file/>`_ >> `Arclinux AUR package
   <https://aur.archlinux.org/packages/python-magic/>`_
@@ -60,7 +63,7 @@ Similar Programs
 * `mimi <https://github.com/taylorchu/mimi>`_
 * `buskin <https://github.com/supplantr/busking>`_
 
-`List of xdg-open replacements on Archlinux wiki <https://wiki.archlinux.org/index.php/Xdg-open#xdg-open_replacements>`_.
+`List of xdg-open replacements on Archlinux wiki`_
 
 TODO
 ----
@@ -71,3 +74,6 @@ TODO
 * Add missing xdg-open functionality
 
 .. _xdg-utils: http://cgit.freedesktop.org/xdg/xdg-utils/
+.. _`Desktop Entry Specification`: http://standards.freedesktop.org/desktop-entry-spec/latest/
+.. _`xdg-open: be more paranoid in escaping`: http://cgit.freedesktop.org/xdg/xdg-utils/commit/?id=2373d9b2b70652e447b413cde7939bff42fb960d
+.. _`List of xdg-open replacements on Archlinux wiki`: https://wiki.archlinux.org/index.php/Xdg-open#xdg-open_replacements
