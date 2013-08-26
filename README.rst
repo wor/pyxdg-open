@@ -20,7 +20,7 @@ Example config file (by default located at:
                           /usr/local/share/applications/
 
     # List files under desktop_file_paths which are first searched for desktop
-    # files. If this empty no list files are used.
+    # files. If this is empty no list files are used.
     list_files = mimeapps.list,
                  defaults.list
 
