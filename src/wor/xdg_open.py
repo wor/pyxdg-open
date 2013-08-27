@@ -149,6 +149,9 @@ class URL(object):
                         log.debug("-------- mimetypes differed from magic --------")
                         log.debug("{} != {}".format(mime_type, mime_type_mm))
                         log.debug("-----------------------------------------------")
+                    if not mime_type and mime_type_mm:
+                        log.debug("Preferring something over 'None'")
+                        mime_type = mime_type_mm
 
             # Try to fix mime type for certain file types using file extension
             if mime_type == "application/octet-stream":
