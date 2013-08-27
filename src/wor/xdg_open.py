@@ -181,18 +181,20 @@ class URL(object):
         return self.target
 
 
-def desktop_list_parser(desktop_list_fn, mime_type_find=None):
+def desktop_list_parser(desktop_list_fn, mime_type_find=None, find_all=False):
     """Parses desktop list file (defaults.list for example).
 
-    If mime_type_find is given then return just matching desktop file or None if
-    not found. If mime_type_find is not given or evaluates to False then return
-    all mime type desktop file pairs as a dict.
+    If mime_type_find is given then return just first matching desktop file or
+    None if not found. If mime_type_find is not given or evaluates to False then
+    return all mime type desktop file pairs as a dict.
 
     Parameters:
         desktop_list_fn: str. Path of a desktop list file.
         mime_type_find: str. Mime type to find from given desktop list file.
+        find_all: bool. If true returns a list of desktop files when
+            mime_type_find is also given.
     Returns:
-        dict/str/None. See doc string.
+        dict/str/None/[str]. See doc string.
     """
     mt_df_re = re.compile(
             r"""
@@ -201,6 +203,7 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None):
             (.+)[;]?$   # desktop file, ignore possible ';' at the end
             """, re.I|re.X)
     mime_type_desktop_map = {}
+    desktop_files = []
     with open(desktop_list_fn) as f:
         for line in f:
             m = mt_df_re.search(line)
@@ -210,20 +213,34 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None):
             desktop_file = m.groups()[1]
             if mime_type_find:
                 if mime_type == mime_type_find:
-                    return desktop_file
+                    if find_all:
+                        desktop_files.append(desktop_file)
+                    else:
+                        return desktop_file
                 continue
             else:
-                mime_type_desktop_map[mime_type] = desktop_file
+                # If same mime_types in the list file then return desktop files
+                # are in a list.
+                if mime_type in mime_type_desktop_map:
+                    if isinstance(mime_type_desktop_map[mime_type], list):
+                        mime_type_desktop_map[mime_type].append(desktop_file)
+                    else:
+                        mime_type_desktop_map[mime_type] = [mime_type_desktop_map[mime_type], desktop_file]
+
+    if find_all:
+        return desktop_files
     return mime_type_desktop_map if mime_type_desktop_map else None
 
 
-def get_desktop_file_from_mime_list(mime_type, list_files):
+def get_desktop_file_from_mime_list(mime_type, list_files, find_all=False):
     """Find desktop file from a mime list file.
 
     Desktop file paths and list files are read from global CONFIG.
 
     Parameters:
         mime_type: str. Mime type as string.
+        list_files: TODO:
+        find_all: TODO:
 
     Returns:
         DesktopFile().
@@ -250,29 +267,38 @@ def get_desktop_file_from_mime_list(mime_type, list_files):
         for lf in list_files:
             p = os.path.join(dp, lf)
             if os.path.exists(p):
-                df = desktop_list_parser(p, mime_type)
+                df = desktop_list_parser(p, mime_type, find_all)
                 if df:
                     return df, p
         return None, ""
     log = logging.getLogger(__name__)
 
     # First parse desktop file lists, and try to find desktop file there
+    parsed_desktop_files = []
     for dp in CONFIG["desktop_file_paths"]:
-        # TODO: document and add configuration option
-        desktop_file, list_file = check_list_files()
-        if desktop_file:
-            df_fp = get_full_path(desktop_file)
-            if not df_fp:
-                log.warn("Could not find desktop file named: "
-                        "{}, mentioned in {}".format(desktop_file, list_file))
-                return None
-            log.info("Found desktop file from list: {}".format(list_file))
-            with open(df_fp) as df:
-                return df_parser.parse(df)
-    return None
+        desktop_files, list_file = check_list_files()
+        if not isinstance(desktop_files, list):
+            desktop_files = [desktop_files]
+        for desktop_file in desktop_files:
+            if desktop_file:
+                df_fp = get_full_path(desktop_file)
+                if not df_fp:
+                    log.warn("Could not find desktop file named: "
+                            "{}, mentioned in {}".format(desktop_file, list_file))
+                    if not find_all:
+                        return None
+                    continue
+                log.info("Found desktop file from list: {}".format(list_file))
+                with open(df_fp) as df:
+                    parsed_df = df_parser.parse(df)
+                    if not find_all:
+                        return parsed_df
+                    parsed_desktop_files.append(parsed_df)
+
+    return parsed_desktop_files if parsed_desktop_files else None
 
 
-def get_desktop_file_by_search(key_value_pair):
+def get_desktop_file_by_search(key_value_pair, find_all=False):
     """Finds desktop file by searching from CONFIG["desktop_file_paths"].
 
     Desktop file which contains given key value pair is returned. Desktop files
@@ -280,6 +306,7 @@ def get_desktop_file_by_search(key_value_pair):
 
     Parameters:
         key_value_pair: (str, str).
+        find_all: TODO:
 
     Returns:
         DesktopFile().
@@ -289,6 +316,7 @@ def get_desktop_file_by_search(key_value_pair):
     # Next try to find correct desktop file by parsing invidual desktop files
     search_key   = key_value_pair[0]
     search_value = key_value_pair[1]
+    desktop_files = []
     for dp in CONFIG["desktop_file_paths"]:
         for root, dirs, files in nrwalk(
                 dp, filefilter=lambda f,_: not f.endswith(".desktop")):
@@ -310,11 +338,17 @@ def get_desktop_file_by_search(key_value_pair):
                     #    .format(df_name, search_key))
                     #continue
                 if search_value in mt_entry.value:
-                    return df
+                    if not find_all:
+                        return df
+                    else:
+                        desktop_files.append(df)
+
+    if find_all and desktop_files:
+        return desktop_files
     return None
 
 
-def get_desktop_file(key_value_pair=("","")):
+def get_desktop_file(key_value_pair=("",""), print_found=False):
     """Finds desktop file by key value pair.
 
     TODO: Memory cache values per run.
@@ -331,10 +365,13 @@ def get_desktop_file(key_value_pair=("","")):
 
     Parameters:
         key_value_pair: (str, str).
+        print_found: bool. Print found desktop files and don't stop when first
+            is found.
     """
     log = logging.getLogger(__name__)
 
     df = None
+    found_desktop_files = ""
     # Do desktop file searchs in given order (config file)
     for search in CONFIG["search_order"]:
         if search == "list_files":
@@ -342,18 +379,39 @@ def get_desktop_file(key_value_pair=("","")):
             # If MimeType key then search first from MimeType/Desktop file list files.
             # Configuration option list files must also be specified for this.
             if key_value_pair[0] == "MimeType" and CONFIG["list_files"]:
-                df = get_desktop_file_from_mime_list(key_value_pair[1], CONFIG["list_files"])
+                df = get_desktop_file_from_mime_list(
+                        key_value_pair[1],
+                        CONFIG["list_files"],
+                        find_all=print_found)
                 if df:
-                    # TODO: transform to absolute dir if needed
-                    log.debug("Found df from MimeType/desktop file list.")
-                    break
+                    log.info("Found df from MimeType/desktop file list.")
+                    if not print_found:
+                        break
+                    else:
+                        for d in df:
+                            found_desktop_files += d.file_name + " [list_files]" + os.linesep
         elif search == "desktop_file_paths":
             log.debug("Running desktop_file_paths search.")
-            df = get_desktop_file_by_search(key_value_pair)
+            df2 = get_desktop_file_by_search(key_value_pair, find_all=print_found)
+            if df == None:
+                df = df2
+            else:
+                assert(isinstance(df2, list))
+                df = df + df2
             if df:
                 log.debug("Found df with desktop file search.")
-                break
+                if not print_found:
+                    break
+                else:
+                    for d in df:
+                        found_desktop_files += d.file_name + " [desktop_file_paths]" + os.linesep
 
+    if print_found:
+        print("Found desktop files:")
+        print(found_desktop_files)
+
+    if isinstance(df, list):
+        return df[0]
     return df
 
 
@@ -456,7 +514,7 @@ def run_exec(purls, dryrun=False):
             subprocess.Popen(es, shell=True)
 
 
-def xdg_open(urls=None, dryrun=False):
+def xdg_open(urls=None, dryrun=False, print_found=False):
     """Find and use found program to open given URLs.
 
     Tries to find desktop object associated with given url and evaluate it's
@@ -466,6 +524,8 @@ def xdg_open(urls=None, dryrun=False):
         urls: list[str]. URLs to open as list of strings.
         dryrun: bool. Don't actually evaluate exec value/command. Useful for
             testing with high verbosity level.
+        print_found: bool. Print found desktop files and don't stop when first
+            is found.
 
     Returns:
         int. 0 if everything ok nonzero value if not.
@@ -510,7 +570,7 @@ def xdg_open(urls=None, dryrun=False):
         if purl.mime_type:
             # Find .desktop file handling the URLs mime_type
             log.info(CONFIG["desktop_file_paths"])
-            desktop_file = get_desktop_file(("MimeType", purl.mime_type))
+            desktop_file = get_desktop_file(("MimeType", purl.mime_type), print_found)
             if not desktop_file:
                 log.error("Could not find .desktop file"
                         " associated with mime type '{}'"
@@ -736,6 +796,12 @@ def process_cmd_line(inputs=sys.argv[1:], parent_parsers=list(),
         default=False,
         action='store_true',
         help="Don't evaluate final exec value.")
+
+    parser.add_argument(
+        '--print-found',
+        default=False,
+        action='store_true',
+        help="Print ALL found desktop files.")
 
     parser.add_argument(
         '--print-default-config',

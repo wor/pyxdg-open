@@ -45,6 +45,22 @@ desktop files which match certain mime type and one desktop file is preferred,
 then the option is to add the mime type, desktop file pair to mimeapps.list or
 defaults.list file.
 
+Examples
+--------
+
+Print all found desktop files, which open PDF files without really opening
+anything. Useful for finding all possible desktop files, in this case for PDF::
+
+    $ xdg-open --dryrun --print-found some.pdf
+    Found desktop files:
+    /usr/share/applications/zathura.desktop [list_files]
+    /usr/share/applications/zathura.desktop [desktop_file_paths]
+    /home/wor/.local/share/applications/wine-extension-pdf.desktop [desktop_file_paths]
+    /usr/share/applications/xpdf.desktop [desktop_file_paths]
+    /usr/share/applications/zathura-pdf-poppler.desktop [desktop_file_paths]
+    /usr/share/applications/gimp.desktop [desktop_file_paths]
+
+
 Archlinux PKGBUILD
 ------------------
 
