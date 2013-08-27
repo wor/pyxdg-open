@@ -61,6 +61,9 @@ DEFAULT_CONFIG = OrderedDict(sorted({
             "/usr/share/applications/, "
             "/usr/local/share/applications/",
         "default_terminal_emulator": "",
+        "search_order":
+            "list_files, "
+            "desktop_file_paths"
         }.items(), key=lambda t: t[0]))
 
 
@@ -332,19 +335,24 @@ def get_desktop_file(key_value_pair=("","")):
     log = logging.getLogger(__name__)
 
     df = None
-    # If MimeType key then search first from MimeType/Desktop file list files.
-    # Configuration option list files must also be specified for this.
-    if key_value_pair[0] == "MimeType" and CONFIG["list_files"]:
-        df = get_desktop_file_from_mime_list(key_value_pair[1], CONFIG["list_files"])
-        if df:
-            # TODO: transform to absolute dir if needed
-            log.debug("Found df from MimeType/desktop file list.")
-            return df
-
-    if not df:
-        df = get_desktop_file_by_search(key_value_pair)
-        if df:
-            log.debug("Found df with desktop file search.")
+    # Do desktop file searchs in given order (config file)
+    for search in CONFIG["search_order"]:
+        if search == "list_files":
+            log.debug("Running list_files search.")
+            # If MimeType key then search first from MimeType/Desktop file list files.
+            # Configuration option list files must also be specified for this.
+            if key_value_pair[0] == "MimeType" and CONFIG["list_files"]:
+                df = get_desktop_file_from_mime_list(key_value_pair[1], CONFIG["list_files"])
+                if df:
+                    # TODO: transform to absolute dir if needed
+                    log.debug("Found df from MimeType/desktop file list.")
+                    break
+        elif search == "desktop_file_paths":
+            log.debug("Running desktop_file_paths search.")
+            df = get_desktop_file_by_search(key_value_pair)
+            if df:
+                log.debug("Found df with desktop file search.")
+                break
 
     return df
 
@@ -788,6 +796,7 @@ def read_config_options(config_file_path):
     store_opt(options_dict, "list_files", parse_comma_sep_list)
     store_opt(options_dict, "desktop_file_paths", parse_comma_sep_list)
     store_opt(options_dict, "default_terminal_emulator")
+    store_opt(options_dict, "search_order", parse_comma_sep_list)
     return options_dict
 
 

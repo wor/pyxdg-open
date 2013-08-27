@@ -28,9 +28,16 @@ Example config file (by default located at:
     # TerminalEmulator as Category will be used.
     #default_terminal_emulator = urxtvc
 
-If list_files is defined, desktop files are first searched from existing
-list_files located in the ´desktop_file_paths´. Second the desktop files are
-searched normally from the defined ´desktop_file_paths´.
+    # Default search order. This means, first use list_files to find the appropriate
+    # desktop file and if not found, proceed to searching desktop files from desktop
+    # file paths.
+    search_order = list_files,
+                   desktop_file_paths
+
+´search_order´ defines the order of desktop file searches. By default the
+desktop files are first searched from the list files located in the
+´desktop_file_paths´ (´list_files´ must be defined). Second the desktop files
+are searched normally from the defined ´desktop_file_paths´.
 
 If ´desktop_file_paths´ are searched for the desktop file then the first desktop
 file which has the matching mime type listed is selected. If there are many
