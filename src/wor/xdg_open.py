@@ -128,11 +128,12 @@ class URL(object):
             # If file doesn't exist try to guess its mime type from its extension
             # only.
             if not os.path.exists(url):
+                log.debug("Guessing non-existing files mimetype from its extension.")
                 file_ext = os.path.splitext(url)[1]
                 if len(file_ext) > 1:
-                    mimetypes.init()
+                    MT.init()
                     try:
-                        mime_type = mimetypes.types_map[file_ext]
+                        mime_type = MT.types_map[file_ext]
                     except KeyError:
                         log.debug("mimetypes could not determine mimetype"
                                 " from extension: {}".format(file_ext))
