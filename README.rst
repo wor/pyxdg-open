@@ -34,16 +34,38 @@ Example config file (by default located at:
     search_order = list_files,
                    desktop_file_paths
 
+    # An example of a custom search which can be added to the 'search_order' list,
+    # in this case, with name 'my_own_mappings'.
+    #
+    # Matching can be done with either mime type or file name ending. Mime type can
+    # be either full "type/subtype", or partial "type/" or "/subtype".
+    #
+    # Target can be either a command to which file name is appended before
+    # executing, or relative, or absolute path to a desktop file. Relative paths are
+    # interpreted to be relative to given desktop_file_paths.
+    #[my_own_mappings]
+    #application/pdf = zathura
+    #video/          = vlc
+    #audio/          = vlc
+    #rar             = file-roller
+    #tar.gz         = /tmp/some_app.desktop
+    #inode/directory = urxvtc.desktop
+
 ´search_order´ defines the order of desktop file searches. By default the
 desktop files are first searched from the list files located in the
 ´desktop_file_paths´ (´list_files´ must be defined). Second the desktop files
 are searched normally from the defined ´desktop_file_paths´.
 
+pyxdg-open also support mimi_ like custom configs which can be added to the
+´search_order´ list.
+
 If ´desktop_file_paths´ are searched for the desktop file then the first desktop
 file which has the matching mime type listed is selected. If there are many
 desktop files which match certain mime type and one desktop file is preferred,
 then the option is to add the mime type, desktop file pair to mimeapps.list or
-defaults.list file.
+defaults.list file. Another way is to just add own custom mappings to the config
+file as seen from the example and add this sections name as first in the
+´search_order´ list.
 
 Examples
 --------
@@ -83,7 +105,7 @@ Optional Dependencies
 Similar Programs
 ----------------
 
-* `mimi <https://github.com/taylorchu/mimi>`_
+* mimi_
 * `buskin <https://github.com/supplantr/busking>`_
 
 `List of xdg-open replacements on Archlinux wiki`_
@@ -100,3 +122,4 @@ TODO
 .. _`Desktop Entry Specification`: http://standards.freedesktop.org/desktop-entry-spec/latest/
 .. _`xdg-open: be more paranoid in escaping`: http://cgit.freedesktop.org/xdg/xdg-utils/commit/?id=2373d9b2b70652e447b413cde7939bff42fb960d
 .. _`List of xdg-open replacements on Archlinux wiki`: https://wiki.archlinux.org/index.php/Xdg-open#xdg-open_replacements
+.. _mimi: https://github.com/taylorchu/mimi

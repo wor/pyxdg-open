@@ -232,6 +232,17 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None, find_all=False):
     return mime_type_desktop_map if mime_type_desktop_map else None
 
 
+def get_df_full_path(desktop_file):
+    """Retuns full path of a desktop file.
+    """
+    # We cannot know where desktop file is found?
+    for dp in CONFIG["desktop_file_paths"]:
+        test_desktop_file = os.path.join(dp, desktop_file)
+        if os.path.isfile(test_desktop_file):
+            return test_desktop_file
+    return None
+
+
 def get_desktop_file_from_mime_list(mime_type, list_files, find_all=False):
     """Find desktop file from a mime list file.
 
@@ -243,15 +254,8 @@ def get_desktop_file_from_mime_list(mime_type, list_files, find_all=False):
         find_all: TODO:
 
     Returns:
-        DesktopFile().
+        DesktopFile() or if find_all==True lists of DesktopFiles.
     """
-    def get_full_path(desktop_file):
-        # We cannot know where desktop file is found?
-        for dp in CONFIG["desktop_file_paths"]:
-            test_desktop_file = os.path.join(dp, desktop_file)
-            if os.path.isfile(test_desktop_file):
-                return test_desktop_file
-        return None
     def check_list_files():
         """Gets desktop file name from a list file.
 
@@ -281,7 +285,7 @@ def get_desktop_file_from_mime_list(mime_type, list_files, find_all=False):
             desktop_files = [desktop_files]
         for desktop_file in desktop_files:
             if desktop_file:
-                df_fp = get_full_path(desktop_file)
+                df_fp = get_df_full_path(desktop_file)
                 if not df_fp:
                     log.warn("Could not find desktop file named: "
                             "{}, mentioned in {}".format(desktop_file, list_file))
@@ -309,7 +313,7 @@ def get_desktop_file_by_search(key_value_pair, find_all=False):
         find_all: TODO:
 
     Returns:
-        DesktopFile().
+        DesktopFile() or if find_all==True lists of DesktopFiles.
     """
     log = logging.getLogger(__name__)
 
@@ -348,10 +352,96 @@ def get_desktop_file_by_search(key_value_pair, find_all=False):
     return None
 
 
-def get_desktop_file(key_value_pair=("",""), print_found=False):
+def get_desktop_file_by_custom_search(target, mime_type, file_name, find_all=False):
+    """Searches matching (pseudo) desktop file from given target.
+
+    Target format is following:
+    [0]:
+       filename extension
+       type/subtype
+       type/
+       /subtype
+    [1]:
+       desktop file name
+       absolute path desktop file name
+       shell command
+
+    Returns:
+        DesktopFile or if find_all=True then list of dynamically created
+        DesktopFile objects (wor.desktop_file_parser.parser.DesktopFile()).
+
+    Parameters:
+        target: [(str,str)]. List of key value pairs from custom search config.
+        mime_type: str. Mime type as a string.
+        file_name: str.
+        find_all: bool.
+    """
+    log = logging.getLogger(__name__)
+
+    matches = []
+    for pattern, value in target:
+        # Filename extension matching
+        if pattern.find("/") == -1 and file_name.endswith("." + pattern):
+            matches.append(value)
+            if not find_all:
+                break
+        # Mimetype end matching
+        elif pattern.startswith("/") and mime_type.endswith(pattern):
+            matches.append(value)
+            if not find_all:
+                break
+        # Mimetype start matching
+        elif pattern.endswith("/") and mime_type.startswith(pattern):
+            matches.append(value)
+            if not find_all:
+                break
+        # Full mimetype matching
+        elif pattern == mime_type:
+            matches.append(value)
+            if not find_all:
+                break
+
+    # Now we have the match(es).
+    # Let's generate desktop files from them.
+    desktop_files = []
+    for match in matches:
+        # Check if a desktop file
+        if match.endswith(".desktop"):
+            # Allow absolute paths possibly outside defined desktop_file_dirs
+            if os.path.isabs(match):
+                if not os.path.exists(match):
+                    log.error("Desktop file '{}' from a config file mapping did not exist!".format(match))
+                    break
+                df = match
+            # Find from desktop_file_dirs
+            else:
+                df = get_df_full_path(match)
+                if not df:
+                    log.error("Failed to find desktop file '{}' from desktop "
+                              "file paths in config file mapping!".format(match))
+                    break
+            with open(df) as df_f:
+                parsed_df = df_parser.parse(df_f)
+                if not find_all:
+                    return parsed_df
+                desktop_files.append(parsed_df)
+        # Else treat as a exec string
+        else:
+            parsed_df = df_parser.DesktopFile(file_name="Generated Desktop File")
+            exec_str = match + " %f"
+            parsed_df.setup_with([("Exec", exec_str)])
+            if not find_all:
+                return parsed_df
+            desktop_files.append(parsed_df)
+
+    return desktop_files
+
+
+def get_desktop_file(key_value_pair, file_name, print_found=False):
     """Finds desktop file by key value pair.
 
-    TODO: Memory cache values per run.
+    TODO: Memory cache values per run. Now can be run multiple times for same
+          type of key/value/file_name
     TODO: Support cached desktop file format.
 
     Finds desktop file which matches given key_value_pair. First from list files
@@ -365,12 +455,26 @@ def get_desktop_file(key_value_pair=("",""), print_found=False):
 
     Parameters:
         key_value_pair: (str, str).
+        file_name: str. File name to be opened. Some searches need this.
         print_found: bool. Print found desktop files and don't stop when first
             is found.
     """
     log = logging.getLogger(__name__)
+    def update_search_results(df, found_desktop_files):
+        assert(isinstance(df, list))
+        if print_found:
+            df += df_temp
+        else:
+            df.append(df_temp)
+        if df_temp:
+            if not print_found:
+                return True
+            else:
+                for d in df_temp:
+                    found_desktop_files += d.file_name + " [" + search + "]" + os.linesep
+        return False
 
-    df = None
+    df = []
     found_desktop_files = ""
     # Do desktop file searchs in given order (config file)
     for search in CONFIG["search_order"]:
@@ -379,40 +483,33 @@ def get_desktop_file(key_value_pair=("",""), print_found=False):
             # If MimeType key then search first from MimeType/Desktop file list files.
             # Configuration option list files must also be specified for this.
             if key_value_pair[0] == "MimeType" and CONFIG["list_files"]:
-                df = get_desktop_file_from_mime_list(
+                df_temp = get_desktop_file_from_mime_list(
                         key_value_pair[1],
                         CONFIG["list_files"],
                         find_all=print_found)
-                if df:
-                    log.info("Found df from MimeType/desktop file list.")
-                    if not print_found:
-                        break
-                    else:
-                        for d in df:
-                            found_desktop_files += d.file_name + " [list_files]" + os.linesep
+                if update_search_results(df, found_desktop_files):
+                    break
         elif search == "desktop_file_paths":
             log.debug("Running desktop_file_paths search.")
-            df2 = get_desktop_file_by_search(key_value_pair, find_all=print_found)
-            if df == None:
-                df = df2
-            else:
-                assert(isinstance(df2, list))
-                df = df + df2
-            if df:
-                log.debug("Found df with desktop file search.")
-                if not print_found:
+            df_temp = get_desktop_file_by_search(key_value_pair, find_all=print_found)
+            if update_search_results(df, found_desktop_files):
+                break
+        elif search in CONFIG["custom_searchs"].keys():
+            log.debug("Running custom config search: {}".format(search))
+            if key_value_pair[0] == "MimeType":
+                df_temp = get_desktop_file_by_custom_search(
+                        CONFIG["custom_searchs"][search],
+                        key_value_pair[1],
+                        file_name,
+                        find_all=print_found)
+                if update_search_results(df, found_desktop_files):
                     break
-                else:
-                    for d in df:
-                        found_desktop_files += d.file_name + " [desktop_file_paths]" + os.linesep
 
     if print_found:
         print("Found desktop files:")
         print(found_desktop_files)
 
-    if isinstance(df, list):
-        return df[0]
-    return df
+    return df[0] if df else None
 
 
 def run_exec(purls, dryrun=False):
@@ -483,7 +580,7 @@ def run_exec(purls, dryrun=False):
             else:
                 # If not default terminal emulator specified in the config file
                 # then try to find a terminal emulator from desktop files.
-                terminal_df = get_desktop_file(("Category", "TerminalEmulator"))
+                terminal_df = get_desktop_file(("Category", "TerminalEmulator"), file_name=None)
                 if terminal_df:
                     exec_str = terminal_df.get_entry_value_from_group("Exec") + \
                             " -e " + exec_str
@@ -570,7 +667,10 @@ def xdg_open(urls=None, dryrun=False, print_found=False):
         if purl.mime_type:
             # Find .desktop file handling the URLs mime_type
             log.info(CONFIG["desktop_file_paths"])
-            desktop_file = get_desktop_file(("MimeType", purl.mime_type), print_found)
+            desktop_file = get_desktop_file(
+                    ("MimeType", purl.mime_type),
+                    file_name=purl.target,
+                    print_found=print_found)
             if not desktop_file:
                 log.error("Could not find .desktop file"
                         " associated with mime type '{}'"
@@ -835,7 +935,11 @@ def read_config_options(config_file_path):
         Parameters:
             config_file: file like object. Open config file.
         """
+        # As DEFAULT is included in all other sections when reading
+        # items/options add empty DEFAULT section and use BASE as base config
+        # section.
         yield "[DEFAULT]\n"
+        yield "[" + base_config_name + "]\n"
         # Next yield the actual config file next
         for line in config_file:
             yield line
@@ -844,8 +948,9 @@ def read_config_options(config_file_path):
 
         DEFAULT_CONFIG provides default config used as fallback.
         """
-        opt = config.get("DEFAULT", opt_name, fallback=DEFAULT_CONFIG[opt_name])
+        opt = config.get(base_config_name, opt_name, fallback=DEFAULT_CONFIG[opt_name])
         opts[opt_name] = opt if not proc_func else proc_func(opt)
+    base_config_name = "BASE43rfdf03jjdf"
 
     config = configparser.ConfigParser()
 
@@ -863,6 +968,14 @@ def read_config_options(config_file_path):
     store_opt(options_dict, "desktop_file_paths", parse_comma_sep_list)
     store_opt(options_dict, "default_terminal_emulator")
     store_opt(options_dict, "search_order", parse_comma_sep_list)
+
+    # Read custom searchs from config file
+    options_dict["custom_searchs"] = {}
+    for section in config.sections():
+        if section == base_config_name:
+            continue
+        options_dict["custom_searchs"][section] = config.items(section=section)
+
     return options_dict
 
 
