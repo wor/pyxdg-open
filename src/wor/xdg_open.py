@@ -654,6 +654,7 @@ def xdg_open(urls=None, dryrun=False, print_found=False):
                 store = True
         if group:
             grouped_purls.append(group)
+        log.debug("Formed {} URL groups.".format(len(grouped_purls)))
         return grouped_purls
 
     log.info("Got urls: '{}'".format(urls))
@@ -688,11 +689,12 @@ def xdg_open(urls=None, dryrun=False, print_found=False):
             continue
         purl.desktop_file = desktop_file
         log.info("Found desktop file '{}'".format(desktop_file.file_name))
-        log.info(str(desktop_file))
+        #log.debug(str(desktop_file))
         purls.append(purl)
 
     # Group URLs with same desktop_file
     grouped_purls = group_purls(purls)
+    log.debug("Grouped purls: {}".format(str(grouped_purls)))
 
     # TODO: Are there any other possible actions, beside running exec?
     # Run exec should have all URLs with same desktop_file
