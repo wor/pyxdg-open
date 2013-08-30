@@ -600,9 +600,9 @@ def run_exec(purls, dryrun=False):
     log.info("run_exec: {}".format(exec_str))
 
     # If we have %f or %u and length(purls) > 1, then do multiple exec calls
-    if exec_str.find('%f') != 1 and \
-            exec_str.find('%u') != 1 and \
-            len(purls) > 1:
+    if len(purls) > 1 and (
+            exec_str.find('%f') != -1 or
+            exec_str.find('%u') != -1):
         for purl in purls:
             exec_strs.append(get_prepared_exec_str(purl))
     else:
