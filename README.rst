@@ -83,6 +83,46 @@ anything. Useful for finding all possible desktop files, in this case for PDF::
     /usr/share/applications/gimp.desktop [desktop_file_paths]
 
 
+Let's say that I have following in my config file::
+
+    ...
+    search_order = my_own_mappings,
+                   list_files,
+                   desktop_file_paths
+
+    [my_own_mappings]
+    application/pdf = zathura.desktop
+    audio/          = vlc.desktop
+    ...
+
+Now running following runs correctly vlc with two parameters, so that both audio
+tracks end up in the vlc playlist. This is because default ´vlc.desktop´ file
+has ´%U´ in the `Exec key`_ value. If this had been, for example, ´%u´ or ´%f´,
+two instances of vlc would be launched simultaneously playing ´track01.mp3´ and
+´track02.mp3´::
+
+    $ xdg-open -v1 --dryrun track01.mp3 track02.mp3
+    ...
+    INFO:run_exec:613: Calling exec string: /usr/bin/vlc track01.mp3 track02.mp3
+
+As ´zathura.desktop´ contains ´%f´ in the Exec string, only one file is
+accepted and pyxdg-open launches two instances::
+
+    $ xdg-open -v1 --dryrun test0.pdf test1.pdf
+    ...
+    INFO:run_exec:613: Calling exec string: zathura /tmp/test0.pdf
+    INFO:run_exec:613: Calling exec string: zathura /tmp/test1.pdf
+
+This also works correctly with following, as can be seen::
+
+    $ xdg-open -v1 --dryrun test0.pdf test1.pdf audio.mp3 audio.flac
+    ...
+    INFO:run_exec:613: Calling exec string: /usr/bin/vlc audio.mp3 audio.flac
+    ...
+    INFO:run_exec:613: Calling exec string: zathura /tmp/test0.pdf
+    INFO:run_exec:613: Calling exec string: zathura /tmp/test1.pdf
+
+
 Archlinux PKGBUILD
 ------------------
 
@@ -120,6 +160,7 @@ TODO
 
 .. _xdg-utils: http://cgit.freedesktop.org/xdg/xdg-utils/
 .. _`Desktop Entry Specification`: http://standards.freedesktop.org/desktop-entry-spec/latest/
+.. _`Exec key`: http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
 .. _`xdg-open: be more paranoid in escaping`: http://cgit.freedesktop.org/xdg/xdg-utils/commit/?id=2373d9b2b70652e447b413cde7939bff42fb960d
 .. _`List of xdg-open replacements on Archlinux wiki`: https://wiki.archlinux.org/index.php/Xdg-open#xdg-open_replacements
 .. _mimi: https://github.com/taylorchu/mimi
