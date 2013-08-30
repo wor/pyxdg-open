@@ -92,8 +92,12 @@ class URL(object):
 
         self.desktop_file = None
     def __repr__(self):
-        return "<{}|{}|{}|{}|{}>".format(self.url, self.protocol, self.target,
-                self.mime_type, self.desktop_file)
+        """Returns string representation of a URL.
+
+        Note: Doesn't return string reprentation of contained desktop file.
+        """
+        return "<{}|{}|{}|{}>".format(self.url, self.protocol, self.target,
+                self.mime_type)
     def __get_protocol_and_target__(self):
         """Tries to guess ´self.url´ URLs protocol.
 
