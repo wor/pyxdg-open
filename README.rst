@@ -134,7 +134,6 @@ Dependencies
 ------------
 
 * `desktop_file_parser <https://github.com/wor/desktop_file_parser>`_
-* `tokenizer <https://github.com/wor/tokenizer>`_
 
 Optional Dependencies
 ---------------------
