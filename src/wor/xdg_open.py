@@ -468,10 +468,9 @@ def get_desktop_file(key_value_pair, file_name, print_found=False):
         assert(isinstance(df, list))
         if print_found:
             df += df_temp
-        else:
-            df.append(df_temp)
         if df_temp:
             if not print_found:
+                df.append(df_temp)
                 return True
             else:
                 for d in df_temp:
