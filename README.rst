@@ -8,7 +8,7 @@ Motivation for this is to provide file opener which works well without a popular
 desktop environment and still supports `Desktop Entry Specification`_. Also it's
 good to provide something which doesn't have plethora of escaping or other input
 related bugs, e.g. `xdg-open: be more paranoid in escaping`_. This is much
-easier and cleaner to achieve in Python than Bash.
+easier and cleaner to achieve in Python than in Bash.
 
 Example config file (by default located at:
 ~/.config/pyxdg-open/pyxdg-open.conf)::
