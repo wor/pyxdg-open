@@ -42,7 +42,6 @@ except ImportError:
     HAS_MAGIC = False
 
 import wor.desktop_file_parser.parser as df_parser
-import wor.tokenizer
 
 from collections import namedtuple
 from collections import OrderedDict
@@ -334,7 +333,7 @@ def get_desktop_file_by_search(key_value_pair, find_all=False):
                 with open(df_name) as df_:
                     try:
                         df = df_parser.parse(df_)
-                    except wor.tokenizer.TokenizerException as e:
+                    except SyntaxError as e:
                         log.debug(str(e))
                         log.error("Parsing desktop file '{}' failed!"
                                 .format(df_name))
