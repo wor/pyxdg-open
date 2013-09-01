@@ -466,19 +466,18 @@ def get_desktop_file(key_value_pair, file_name, print_found=False):
     log = logging.getLogger(__name__)
     def update_search_results(df, found_desktop_files):
         assert(isinstance(df, list))
-        if print_found:
-            df += df_temp
         if df_temp:
             if not print_found:
                 df.append(df_temp)
                 return True
             else:
+                df += df_temp
                 for d in df_temp:
-                    found_desktop_files += d.file_name + " [" + search + "]" + os.linesep
+                    found_desktop_files.append(d.file_name + " [" + search + "]" + os.linesep)
         return False
 
     df = []
-    found_desktop_files = ""
+    found_desktop_files = [] # list of strings
     # Do desktop file searchs in given order (config file)
     for search in CONFIG["search_order"]:
         if search == "list_files":
@@ -510,7 +509,7 @@ def get_desktop_file(key_value_pair, file_name, print_found=False):
 
     if print_found:
         print("Found desktop files:")
-        print(found_desktop_files)
+        print("".join(found_desktop_files))
 
     return df[0] if df else None
 
