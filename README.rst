@@ -75,7 +75,9 @@ Examples
 --------
 
 Print all found desktop files, which open PDF files without really opening
-anything. Useful for finding all possible desktop files, in this case for PDF::
+anything. Useful for finding all possible desktop files, in this case for PDF:
+
+.. code-block:: bash
 
     $ xdg-open --dryrun --print-found some.pdf
     Found desktop files:
@@ -87,7 +89,9 @@ anything. Useful for finding all possible desktop files, in this case for PDF::
     /usr/share/applications/gimp.desktop [desktop_file_paths]
 
 
-Let's say that I have following in my config file::
+Let's say that I have following in my config file:
+
+.. code-block:: ini
 
     ...
     search_order = my_own_mappings,
@@ -103,21 +107,27 @@ Now running following runs correctly vlc with two parameters, so that both audio
 tracks end up in the vlc playlist. This is because default ´vlc.desktop´ file
 has ´%U´ in the `Exec key`_ value. If this had been, for example, ´%u´ or ´%f´,
 two instances of vlc would be launched simultaneously playing ´track01.mp3´ and
-´track02.mp3´::
+´track02.mp3´:
+
+.. code-block:: bash
 
     $ xdg-open -v1 --dryrun track01.mp3 track02.mp3
     ...
     INFO:run_exec:613: Calling exec string: /usr/bin/vlc track01.mp3 track02.mp3
 
 As ´zathura.desktop´ contains ´%f´ in the Exec string, only one file is
-accepted and pyxdg-open launches two instances::
+accepted and pyxdg-open launches two instances:
+
+.. code-block:: bash
 
     $ xdg-open -v1 --dryrun test0.pdf test1.pdf
     ...
     INFO:run_exec:613: Calling exec string: zathura /tmp/test0.pdf
     INFO:run_exec:613: Calling exec string: zathura /tmp/test1.pdf
 
-This also works correctly with following, as can be seen::
+This also works correctly with following, as can be seen:
+
+.. code-block:: bash
 
     $ xdg-open -v1 --dryrun test0.pdf test1.pdf audio.mp3 audio.flac
     ...
