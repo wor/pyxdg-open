@@ -32,6 +32,7 @@ install_requires = [
     # List your project dependencies here.
     # For more details, see:
     # http://packages.python.org/distribute/setuptools.html#declaring-dependencies
+    'desktop_file_parser',
 ]
 
 
@@ -58,6 +59,9 @@ setup(name='pyxdg-open',
     zip_safe=False,
     # Requirements
     install_requires=install_requires,
+    dependency_links = [
+            "https://github.com/wor/desktop_file_parser/tarball/master#egg=desktop_file_parser"
+            ],
 
     entry_points={
         'console_scripts': console_scripts
