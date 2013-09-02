@@ -62,8 +62,8 @@ setup(name='pyxdg-open',
     dependency_links = [
             "https://github.com/wor/desktop_file_parser/tarball/master#egg=desktop_file_parser"
             ],
-
     entry_points={
         'console_scripts': console_scripts
-    }
+    },
+    test_suite='nose.collector',
 )
