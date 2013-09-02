@@ -12,8 +12,48 @@ easier and cleaner to achieve in Python than in Bash.
 
 Example config file:
 
-.. include:: pyxdg-open.conf
-    :code: ini
+.. code-block:: ini
+
+    # Example config file, by default it should be located at:
+    # ~/.config/pyxdg-open/pyxdg-open.conf
+    #
+    # Paths where to search for desktop files in order of preference. It's a comma
+    # separated list.
+    desktop_file_paths = ~/.local/share/applications/,
+                         /usr/share/applications/,
+                         /usr/local/share/applications/
+    
+    # List files under desktop_file_paths which are first searched for desktop
+    # files. If this is empty no list files are used.
+    list_files = mimeapps.list,
+                 defaults.list
+    
+    # If default terminal emulator is not specified then first desktop file with
+    # TerminalEmulator as Category will be used.
+    #default_terminal_emulator = urxtvc
+    
+    # Default search order. This means, first use list_files to find the appropriate
+    # desktop file and if not found, proceed to searching desktop files from desktop
+    # file paths.
+    search_order = list_files,
+                   desktop_file_paths
+    
+    # An example of a custom search which can be added to the 'search_order' list,
+    # in this case, with name 'my_own_mappings'.
+    #
+    # Matching can be done with either mime type or file name ending. Mime type can
+    # be either full "type/subtype", or partial "type/" or "/subtype".
+    #
+    # Target can be either a command to which file name is appended before
+    # executing, or relative, or absolute path to a desktop file. Relative paths are
+    # interpreted to be relative to given desktop_file_paths.
+    #[my_own_mappings]
+    #application/pdf = zathura
+    #video/          = vlc
+    #audio/          = vlc
+    #rar             = file-roller
+    #tar.gz         = /tmp/some_app.desktop
+    #inode/directory = urxvtc.desktop
 
 ´search_order´ defines the order of desktop file searches. By default the
 desktop files are first searched from the list files located in the
