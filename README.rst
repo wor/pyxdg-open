@@ -2,7 +2,10 @@ pyxdg-open
 ==========
 
 Python xdg-open (from xdg-utils_) clone. Basically determines how to open and
-then opens given URL using system desktop files.
+then opens given URL using system desktop files. It features customizable search
+order, custom mime to application call or to desktop file mappings and proper
+opening of multiple files. It also supports list files (like defaults.list), so
+it should work as expected out of the box with the default config_.
 
 Motivation for this is to provide file opener which works well without a popular
 desktop environment and still supports `Desktop Entry Specification`_. Also it's
@@ -10,7 +13,7 @@ good to provide something which doesn't have plethora of escaping or other input
 related bugs, e.g. `xdg-open: be more paranoid in escaping`_. This is much
 easier and cleaner to achieve in Python than in Bash.
 
-Example config file:
+Example config_ file:
 
 .. code-block:: ini
 
@@ -172,6 +175,7 @@ TODO
 * Add missing xdg-open functionality
 
 .. _xdg-utils: http://cgit.freedesktop.org/xdg/xdg-utils/
+.. _config: https://github.com/wor/pyxdg-open/blob/master/pyxdg-open.conf
 .. _`Desktop Entry Specification`: http://standards.freedesktop.org/desktop-entry-spec/latest/
 .. _`Exec key`: http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
 .. _`xdg-open: be more paranoid in escaping`: http://cgit.freedesktop.org/xdg/xdg-utils/commit/?id=2373d9b2b70652e447b413cde7939bff42fb960d
