@@ -197,7 +197,7 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None, find_all=False):
         find_all: bool. If true returns a list of desktop files when
             mime_type_find is also given.
     Returns:
-        dict/str/None/[str]. See doc string.
+        dict/[str]/None. See doc string.
     """
     mt_df_re = re.compile(
             r"""
@@ -213,22 +213,21 @@ def desktop_list_parser(desktop_list_fn, mime_type_find=None, find_all=False):
             if not m:
                 continue
             mime_type = m.groups()[0]
-            desktop_file = m.groups()[1]
+            single_mime_dfs = parse_comma_sep_list(m.groups()[1])
+            # Just get the desktop files matching the mime type given
             if mime_type_find:
                 if mime_type == mime_type_find:
                     if find_all:
-                        desktop_files.append(desktop_file)
+                        desktop_files += single_mime_dfs
                     else:
-                        return desktop_file
+                        return single_mime_dfs
                 continue
+            # Or get everything..
             else:
-                # If same mime_types in the list file then return desktop files
-                # are in a list.
                 if mime_type in mime_type_desktop_map:
-                    if isinstance(mime_type_desktop_map[mime_type], list):
-                        mime_type_desktop_map[mime_type].append(desktop_file)
-                    else:
-                        mime_type_desktop_map[mime_type] = [mime_type_desktop_map[mime_type], desktop_file]
+                    mime_type_desktop_map[mime_type] += single_mime_dfs
+                else:
+                    mime_type_desktop_map[mime_type] = single_mime_dfs
 
     if find_all:
         return desktop_files
@@ -260,22 +259,25 @@ def get_desktop_file_from_mime_list(mime_type, list_files, find_all=False):
         DesktopFile() or if find_all==True lists of DesktopFiles.
     """
     def check_list_files():
-        """Gets desktop file name from a list file.
+        """Gets desktop file(s) name from a list file.
 
         Checks if list_files exist in the current desktop file path (dp) and if
         it's so then tries to find matchin desktop file name for the mime_type.
+        If list files defines multiple desktop files in one entry, just takes
+        the first one existing if not ´find_all´ defined.
 
         Uses:
             dp, list_files, mime_type
 
         Returns:
-            str. Desktop file name matching mime_type.
+            [str]. Desktop file names matching the mime_type.
         """
         for lf in list_files:
             p = os.path.join(dp, lf)
             if os.path.exists(p):
+                log.debug("Searching list file: {}".format(p))
                 df = desktop_list_parser(p, mime_type, find_all)
-                if df:
+                if df and df[0]:
                     return df, p
         return None, ""
     log = logging.getLogger(__name__)
@@ -284,16 +286,13 @@ def get_desktop_file_from_mime_list(mime_type, list_files, find_all=False):
     parsed_desktop_files = []
     for dp in CONFIG["desktop_file_paths"]:
         desktop_files, list_file = check_list_files()
-        if not isinstance(desktop_files, list):
-            desktop_files = [desktop_files]
+        if not desktop_files: continue
         for desktop_file in desktop_files:
             if desktop_file:
                 df_fp = get_df_full_path(desktop_file)
                 if not df_fp:
-                    log.warn("Could not find desktop file named: "
-                            "{}, mentioned in {}".format(desktop_file, list_file))
-                    if not find_all:
-                        return None
+                    log.info("Skipping not found (list) desktop file "
+                            "'{}', mentioned in '{}'".format(desktop_file, list_file))
                     continue
                 log.info("Found desktop file from list: {}".format(list_file))
                 with open(df_fp) as df:
