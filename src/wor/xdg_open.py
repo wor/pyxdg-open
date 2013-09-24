@@ -34,8 +34,10 @@ import shlex
 import subprocess
 import sys
 import urllib
+import tempfile
 
 HAS_MAGIC = True
+MM = None
 try:
     import magic
 except ImportError:
@@ -67,7 +69,14 @@ DEFAULT_CONFIG = OrderedDict(sorted({
 
 
 class URL(object):
-    """Represents xdg-opens input (an URL) as a class."""
+    """Represents xdg-opens input (an URL) as a class.
+
+    Attributes:
+        url
+        protocol
+        target
+        desktop_file
+    """
     def __init__(self, url, protocol="", target="", mime_type=""):
         """URL initialization.
 
@@ -182,6 +191,37 @@ class URL(object):
         return self.url
     def get_target(self):
         return self.target
+
+
+def which(program):
+    """Mimics *nix 'which' command.
+
+    Finds given program from path if it's not absolute path. Else just checks
+    if it's executable.
+
+    This is quite trivial function is orginally from:
+    http://stackoverflow.com/a/377028/538470
+
+    Returns:
+        str. Found executable with full path.
+
+    Parameters:
+        program: str. Executable name.
+    """
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
 
 
 def desktop_list_parser(desktop_list_fn, mime_type_find=None, find_all=False):
@@ -320,6 +360,7 @@ def get_desktop_file_by_search(key_value_pair, find_all=False):
     log = logging.getLogger(__name__)
 
     # Next try to find correct desktop file by parsing invidual desktop files
+    log.debug("Find desktop file by search with key/value: {}".format(key_value_pair))
     search_key   = key_value_pair[0]
     search_value = key_value_pair[1]
     desktop_files = []
@@ -359,18 +400,24 @@ def get_desktop_file_by_custom_search(target, mime_type, file_name, find_all=Fal
 
     Target format is following:
     [0]:
-       filename extension
-       type/subtype
-       type/
-       /subtype
+        filename extension
+        type/subtype
+        type/
+        /subtype
     [1]:
-       desktop file name
-       absolute path desktop file name
-       shell command
+        desktop file name
+        absolute path desktop file name
+        shell command
+        special command
+
+    Special commands:
+        !bashwrap <command>: wraps given <command> with bash. See:
+        http://wor.github.io/bash/2013/07/26/start-bash-and-terminal-program.html
 
     Returns:
-        DesktopFile or if find_all=True then list of dynamically created
-        DesktopFile objects (wor.desktop_file_parser.parser.DesktopFile()).
+        Existing DesktopFile or if find_all=True then list of dynamically
+        created DesktopFile objects
+        (wor.desktop_file_parser.parser.DesktopFile()).
 
     Parameters:
         target: [(str,str)]. List of key value pairs from custom search config.
@@ -429,9 +476,29 @@ def get_desktop_file_by_custom_search(target, mime_type, file_name, find_all=Fal
                 desktop_files.append(parsed_df)
         # Else treat as a exec string
         else:
-            parsed_df = df_parser.DesktopFile(file_name="Generated Desktop File")
-            exec_str = match + " %f"
-            parsed_df.setup_with([("Exec", exec_str)])
+            # Create new desktop file identified by given exec string (match).
+            # As desktop file name is used to determine their sameness when
+            # grouping them, this ensures that generated desktop files are
+            # grouped right.
+            parsed_df = df_parser.DesktopFile(file_name="Generated Desktop File: " + match)
+            default_field = "%F"
+            # Special !bashwrap command
+            # bash wrapped programs are expected to be run inside a terminal
+            if match.startswith("!bashwrap"):
+                cmd = match[len("!bashwrap") + 1:]
+                # TODO!: Support field variables in custom config, and document
+                # it
+                cmd += " " + default_field
+                # For now we create default desktop file entry, exec string is
+                # added later as is cmd expanded. This happens because we set
+                # bashwrap_cmd variable for the desktop file.
+                parsed_df.setup_with([("Terminal", True), ("Exec", "bashwrap placeholder")])
+                parsed_df.bashwrap_cmd = cmd
+            else:
+                # TODO!: Support field variables in custom config, and document
+                # it
+                exec_str = match + " " + default_field
+                parsed_df.setup_with([("Exec", exec_str)])
             if not find_all:
                 return parsed_df
             desktop_files.append(parsed_df)
@@ -449,8 +516,8 @@ def get_desktop_file(key_value_pair, file_name, print_found=False):
     Finds desktop file which matches given key_value_pair. First from list files
     and then by systematic desktop file search.
 
-    For example if given key_value_pair is ("Category","TerminalEmulator"), then
-    a desktop file which contains "TerminalEmulator" value in "Category" key is
+    For example if given key_value_pair is ("Categories","TerminalEmulator"), then
+    a desktop file which contains "TerminalEmulator" value in "Categories" key is
     returned.
 
     The first desktop file found is returned.
@@ -495,7 +562,7 @@ def get_desktop_file(key_value_pair, file_name, print_found=False):
             if update_search_results(df, found_desktop_files):
                 break
         elif search in CONFIG["custom_searchs"].keys():
-            log.debug("Running custom config search: {}".format(search))
+            log.debug("Running custom config search ({}): {}".format(key_value_pair, search))
             if key_value_pair[0] == "MimeType":
                 df_temp = get_desktop_file_by_custom_search(
                         CONFIG["custom_searchs"][search],
@@ -512,51 +579,49 @@ def get_desktop_file(key_value_pair, file_name, print_found=False):
     return df[0] if df else None
 
 
-def run_exec(purls, dryrun=False):
-    """Evaluates/Runs desktop files Exec value.
+def get_prepared_exec_str(purl, purls):
+    """Expands field (%x) variables in Exec strings.
 
-    http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#exec-variables
+    Replaces Exec string fields (%x) and wraps with terminal emulator
+    command if terminal True.
 
-    Should be escaped inside double quotes, double quote character, backtick
-    character ("`"), dollar sign ("$") and backslash character ("\")
+    All given URLs are expected to have same desktop file.
 
-    Parameters:
-        purls. [URL]. List of URLs.
-        dryrun. bool. If True Don't actually evaluate anything.
+    Paramters:
+        purl: URL. Parsed url, Exec string is got from associated desktop file.
+        purls: [URL]. List of parsed urls. Used for expanding '%F' and '%U'
+            fields. First parameter purl should be included in this list.
     """
     log = logging.getLogger(__name__)
-    def get_prepared_exec_str(purl):
-        """Replaces exec_str fields (%x) and wraps with terminal emulator
-        command if terminal True.
+    def expand_fields(string):
+        """Expands or removes field variables from the given string.
         """
-        exec_str = purl.desktop_file.get_entry_value_from_group("Exec")
-
         # Fill fields
         # TODO: '%' char escaping is not considered yet
         # http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
 
         # First remove/ignore deprecated
-        exec_str = exec_str.replace('%d', "")
-        exec_str = exec_str.replace('%D', "")
-        exec_str = exec_str.replace('%n', "")
-        exec_str = exec_str.replace('%N', "")
-        exec_str = exec_str.replace('%v', "")
-        exec_str = exec_str.replace('%m', "")
+        string = string.replace('%d', "")
+        string = string.replace('%D', "")
+        string = string.replace('%n', "")
+        string = string.replace('%N', "")
+        string = string.replace('%v', "")
+        string = string.replace('%m', "")
 
-        exec_str = exec_str.replace('%f', shlex.quote(purl.get_target()))
-        exec_str = exec_str.replace('%u', shlex.quote(purl.get_url()))
+        string = string.replace('%f', shlex.quote(purl.get_target()))
+        string = string.replace('%u', shlex.quote(purl.get_url()))
 
-        exec_str = exec_str.replace('%F', " ".join(
-                [ shlex.quote(purl.get_target()) for purl in purls]))
-        exec_str = exec_str.replace('%U', " ".join(
-                [ shlex.quote(purl.get_url()) for purl in purls]))
+        string = string.replace('%F', " ".join(
+                [ shlex.quote(_purl.get_target()) for _purl in purls]))
+        string = string.replace('%U', " ".join(
+                [ shlex.quote(_purl.get_url()) for _purl in purls]))
 
         icon_value = purl.desktop_file.get_entry_value_from_group("Icon")
-        exec_str = exec_str.replace('%i',
+        string = string.replace('%i',
                 icon_value if icon_value != None else "")
 
         # Replace locale dependent name
-        if exec_str.find("%c") != -1:
+        if string.find("%c") != -1:
             loc = locale.getlocale()[0]
             name = purl.desktop_file.get_entry_value_from_group(
                     "Name[{}]".format(loc))
@@ -564,45 +629,99 @@ def run_exec(purls, dryrun=False):
                 name = purl.desktop_file.get_entry_value_from_group(
                         "Name[{}]".format(loc.partition("_")[0]))
             if name == None:
-                exec_str = exec_str.replace('%c', "")
+                string = string.replace('%c', "")
             else:
-                exec_str = exec_str.replace('%c', shlex.quote(name))
+                string = string.replace('%c', shlex.quote(name))
 
         # TODO: file name in URI form if not local (vholder?)
-        exec_str = exec_str.replace(
+        string = string.replace(
                 '%k', shlex.quote(purl.desktop_file.file_name))
+        return string
 
-        if purl.desktop_file.get_entry_value_from_group("Terminal"):
-            log.info("wrapping exec string with terminal emulator call.")
-            if CONFIG["default_terminal_emulator"]:
-                exec_str = CONFIG["default_terminal_emulator"] + \
+    if purl.desktop_file.bashwrap_cmd:
+        # Expand bashwrap command and create a custom bashrc with it
+        cmd = expand_fields(purl.desktop_file.bashwrap_cmd)
+        rc_file = tempfile.NamedTemporaryFile(mode='a+b', delete=False)
+
+        # Let's add orginal bashrc file if it exits
+        try:
+            with open(os.path.expanduser("~/.bashrc"), "r") as org_rc_file:
+                rc_file.write(org_rc_file.read().encode("ascii"))
+        except IOError:
+            pass
+
+        # rm is used in the custom bashrc to delete it self
+        rm_path = "/usr/bin/rm"
+        if not which("rm_path"):
+            rm_path = which("rm")
+
+        additional = """export PROMPT_COMMAND=""" + \
+            """'{}; export PROMPT_COMMAND=""'\n{} '{}'\n""".format(
+                    cmd, rm_path, rc_file.name)
+        rc_file.write(additional.encode("ascii"))
+        rc_file.flush()
+        exec_str = "bash --rcfile " + rc_file.name + " -i"
+    else:
+        exec_str = purl.desktop_file.get_entry_value_from_group("Exec")
+        exec_str = expand_fields(exec_str)
+
+    # Finally do terminal wrapping if needed
+    if purl.desktop_file.get_entry_value_from_group("Terminal"):
+        log.info("wrapping exec string with terminal emulator call.")
+        if CONFIG["default_terminal_emulator"]:
+            exec_str = CONFIG["default_terminal_emulator"] + \
+                    " -e " + exec_str
+        else:
+            # If not default terminal emulator specified in the config file
+            # then try to find a terminal emulator from desktop files.
+            log.debug("Trying to find the terminal emulator from desktop files.")
+            terminal_df = get_desktop_file(("Categories", "TerminalEmulator"), file_name=None)
+            if terminal_df:
+                exec_str = terminal_df.get_entry_value_from_group("Exec") + \
                         " -e " + exec_str
             else:
-                # If not default terminal emulator specified in the config file
-                # then try to find a terminal emulator from desktop files.
-                terminal_df = get_desktop_file(("Category", "TerminalEmulator"), file_name=None)
-                if terminal_df:
-                    exec_str = terminal_df.get_entry_value_from_group("Exec") + \
-                            " -e " + exec_str
-                else:
-                    # Just try xterm if no TerminalEmulator desktop file found
-                    log.warn("Could not find terminal emulator .desktop file:"
-                            " defaulting to xterm")
-                    exec_str = "xterm -e " + exec_str
-        return exec_str
+                # Just try xterm if no TerminalEmulator desktop file found
+                log.warn("Could not find terminal emulator .desktop file:"
+                        " defaulting to xterm")
+                exec_str = "xterm -e " + exec_str
+    return exec_str
+
+
+def run_exec(purls, dryrun=False):
+    """Evaluates/Runs desktop files Exec value.
+
+    http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#exec-variables
+
+    TODO:
+        Should be escaped inside double quotes, double quote character, backtick
+        character ("`"), dollar sign ("$") and backslash character ("\")
+
+    Parameters:
+        purls. [URL]. List of URLs with same desktop file.
+        dryrun. bool. If True Don't actually evaluate anything.
+    """
+    log = logging.getLogger(__name__)
+
+    # XXX: Debug assert
+    for url in purls:
+        assert(url.desktop_file.file_name == purls[0].desktop_file.file_name)
 
     exec_str = purls[0].desktop_file.get_entry_value_from_group("Exec")
     exec_strs = []
     log.info("run_exec: {}".format(exec_str))
 
     # If we have %f or %u and length(purls) > 1, then do multiple exec calls
-    if len(purls) > 1 and (
-            exec_str.find('%f') != -1 or
-            exec_str.find('%u') != -1):
-        for purl in purls:
-            exec_strs.append(get_prepared_exec_str(purl))
+    if len(purls) > 1:
+        # If bashwrap_cmd then it contains the to-be-expanded field variables
+        if purls[0].desktop_file.bashwrap_cmd:
+            check_string = purls[0].desktop_file.bashwrap_cmd
+        else:
+            check_string = exec_str
+        if check_string.find('%f') != -1 or check_string.find('%u') != -1:
+            for purl in purls:
+                exec_strs.append(get_prepared_exec_str(purl, purls))
     else:
-        exec_strs.append(get_prepared_exec_str(purls[0]))
+        exec_strs.append(get_prepared_exec_str(purls[0], purls))
 
     log.info("Final exec string(s): {}".format(repr(exec_strs)))
     for es in exec_strs:
@@ -630,6 +749,8 @@ def xdg_open(urls=None, dryrun=False, print_found=False):
     log = logging.getLogger(__name__)
     def group_purls(purls):
         """Groups purls with same desktop_file together.
+
+        The sameness is determined by desktop files name.
 
         Returns:
             [[URL]].

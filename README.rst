@@ -33,7 +33,7 @@ Example config_ file:
     
     # If default terminal emulator is not specified then first desktop file with
     # TerminalEmulator as Category will be used.
-    #default_terminal_emulator = urxtvc
+    #default_terminal_emulator = urxvtc
     
     # Default search order. This means, first use list_files to find the appropriate
     # desktop file and if not found, proceed to searching desktop files from desktop
@@ -49,13 +49,17 @@ Example config_ file:
     #
     # Target can be either a command to which file name is appended before
     # executing, or relative, or absolute path to a desktop file. Relative paths are
-    # interpreted to be relative to given desktop_file_paths.
+    # interpreted to be relative to given desktop_file_paths. There's a special
+    # command '!bashwrap' which wraps following executable with bash, for more
+    # information see:
+    # http://wor.github.io/bash/2013/07/26/start-bash-and-terminal-program.html
     #[my_own_mappings]
     #application/pdf = zathura
     #video/          = vlc
     #audio/          = vlc
     #rar             = file-roller
-    #tar.gz         = /tmp/some_app.desktop
+    #text/plain      = !bashwrap vim
+    #tar.gz          = /tmp/some_app.desktop
     #inode/directory = urxvtc.desktop
 
 ´search_order´ defines the order of desktop file searches. By default the
