@@ -719,6 +719,8 @@ def run_exec(purls, dryrun=False):
         if check_string.find('%f') != -1 or check_string.find('%u') != -1:
             for purl in purls:
                 exec_strs.append(get_prepared_exec_str(purl, purls))
+        else:
+            exec_strs.append(get_prepared_exec_str(purls[0], purls))
     else:
         exec_strs.append(get_prepared_exec_str(purls[0], purls))
 
