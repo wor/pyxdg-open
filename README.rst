@@ -49,14 +49,17 @@ Example config_ file:
     #
     # Target can be either a command to which file name is appended before
     # executing, or relative, or absolute path to a desktop file. Relative paths are
-    # interpreted to be relative to given desktop_file_paths. There's a special
-    # command '!bashwrap' which wraps following executable with bash, for more
-    # information see:
+    # interpreted to be relative to given desktop_file_paths.
+    # There's a special command '!bashwrap' which wraps following executable with
+    # bash, for more information see:
     # http://wor.github.io/bash/2013/07/26/start-bash-and-terminal-program.html
+    # A command target supports also Desktop file specifiactions Exec value field
+    # keys "%f", "%F", "%u" and "%U". If no field key is given "%F" is appended to
+    # the command by default.
     #[my_own_mappings]
     #application/pdf = zathura
-    #video/          = vlc
-    #audio/          = vlc
+    #video/          = vlc %U
+    #audio/          = vlc %U
     #rar             = file-roller
     #text/plain      = !bashwrap vim
     #tar.gz          = /tmp/some_app.desktop

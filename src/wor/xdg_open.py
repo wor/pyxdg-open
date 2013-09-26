@@ -481,23 +481,22 @@ def get_desktop_file_by_custom_search(target, mime_type, file_name, find_all=Fal
             # grouping them, this ensures that generated desktop files are
             # grouped right.
             parsed_df = df_parser.DesktopFile(file_name="Generated Desktop File: " + match)
+            field_check_re = re.compile(r'%[uf]', re.IGNORECASE)
             default_field = "%F"
             # Special !bashwrap command
             # bash wrapped programs are expected to be run inside a terminal
             if match.startswith("!bashwrap"):
                 cmd = match[len("!bashwrap") + 1:]
-                # TODO!: Support field variables in custom config, and document
-                # it
-                cmd += " " + default_field
+                if not field_check_re.search(cmd):
+                    cmd += " " + default_field
                 # For now we create default desktop file entry, exec string is
                 # added later as is cmd expanded. This happens because we set
                 # bashwrap_cmd variable for the desktop file.
                 parsed_df.setup_with([("Terminal", True), ("Exec", "bashwrap placeholder")])
                 parsed_df.bashwrap_cmd = cmd
             else:
-                # TODO!: Support field variables in custom config, and document
-                # it
-                exec_str = match + " " + default_field
+                if not field_check_re.search(match):
+                    exec_str = match + " " + default_field
                 parsed_df.setup_with([("Exec", exec_str)])
             if not find_all:
                 return parsed_df
