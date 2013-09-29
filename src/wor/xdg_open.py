@@ -701,7 +701,8 @@ def run_exec(purls, dryrun=False):
     """
     log = logging.getLogger(__name__)
 
-    # XXX: Debug assert
+    # XXX: Debug assert, condition for this function is that all desktop files
+    # attached to given URLs are the same.
     for url in purls:
         assert(url.desktop_file.file_name == purls[0].desktop_file.file_name)
 
