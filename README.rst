@@ -89,7 +89,7 @@ anything. Useful for finding all possible desktop files, in this case for PDF:
 
 .. code-block:: bash
 
-    $ xdg-open --dryrun --print-found some.pdf
+    $ pyxdg-open --dryrun --print-found some.pdf
     Found desktop files:
     /usr/share/applications/zathura.desktop [list_files]
     /usr/share/applications/zathura.desktop [desktop_file_paths]
@@ -121,7 +121,7 @@ two instances of vlc would be launched simultaneously playing ´track01.mp3´ an
 
 .. code-block:: bash
 
-    $ xdg-open -v1 --dryrun track01.mp3 track02.mp3
+    $ pyxdg-open -v1 --dryrun track01.mp3 track02.mp3
     ...
     INFO:run_exec:613: Calling exec string: /usr/bin/vlc track01.mp3 track02.mp3
 
@@ -130,7 +130,7 @@ accepted and pyxdg-open launches two instances:
 
 .. code-block:: bash
 
-    $ xdg-open -v1 --dryrun test0.pdf test1.pdf
+    $ pyxdg-open -v1 --dryrun test0.pdf test1.pdf
     ...
     INFO:run_exec:613: Calling exec string: zathura /tmp/test0.pdf
     INFO:run_exec:613: Calling exec string: zathura /tmp/test1.pdf
@@ -139,13 +139,20 @@ This also works correctly with following, as can be seen:
 
 .. code-block:: bash
 
-    $ xdg-open -v1 --dryrun test0.pdf test1.pdf audio.mp3 audio.flac
+    $ pyxdg-open -v1 --dryrun test0.pdf test1.pdf audio.mp3 audio.flac
     ...
     INFO:run_exec:613: Calling exec string: /usr/bin/vlc audio.mp3 audio.flac
     ...
     INFO:run_exec:613: Calling exec string: zathura /tmp/test0.pdf
     INFO:run_exec:613: Calling exec string: zathura /tmp/test1.pdf
 
+Install
+-------
+
+    python3 setup.py install --exec_name="pyxdg-open"
+
+The executable console script name can be controlled with the "--exec_name="
+argument. The default is "pyxdg-open".
 
 Archlinux PKGBUILD
 ------------------
@@ -153,6 +160,14 @@ Archlinux PKGBUILD
 PKGBUILD files for pyxdg-open and it's dependencies can be found from my
 `abs-repo <https://github.com/wor/abs-repo>`_:
 `pyxdg-open-git <https://github.com/wor/abs-repo/tree/master/pyxdg-open-git>`_
+and
+`python-desktop-file-parser-git
+<https://github.com/wor/abs-repo/tree/master/python-desktop-file-parser-git>`_
+
+By default the pyxdg-open-git conflicts with xdg-utils as it uses
+--exec_name="xdg-open". The abs repo also contains a PKGBUILD for xdg-utils
+which does not have "xdg-open":
+`xdg-utils-without-open <https://github.com/wor/abs-repo/tree/master/xdg-utils>`_
 
 Dependencies
 ------------
