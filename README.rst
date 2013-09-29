@@ -151,8 +151,8 @@ Install
 
     python3 setup.py install --exec_name="pyxdg-open"
 
-The executable console script name can be controlled with the "--exec_name="
-argument. The default is "pyxdg-open".
+The executable console script name can be controlled with the ´--exec_name=´
+argument. The default is ´pyxdg-open´.
 
 Archlinux PKGBUILD
 ------------------
@@ -165,8 +165,8 @@ and
 <https://github.com/wor/abs-repo/tree/master/python-desktop-file-parser-git>`_
 
 By default the pyxdg-open-git conflicts with xdg-utils as it uses
---exec_name="xdg-open". The abs repo also contains a PKGBUILD for xdg-utils
-which does not have "xdg-open":
+--exec_name=´xdg-open´. The abs repo also contains a PKGBUILD for xdg-utils
+which does not have ´xdg-open´:
 `xdg-utils-without-open <https://github.com/wor/abs-repo/tree/master/xdg-utils>`_
 
 Dependencies
@@ -179,6 +179,9 @@ Optional Dependencies
 
 * `python-magic <http://darwinsys.com/file/>`_ >> `Arclinux AUR package
   <https://aur.archlinux.org/packages/python-magic/>`_
+
+At the moment pyxdg-open works better with ´python-magic´ than, with the default
+python mimetypes library which is used only if ´python-magic´ is not found.
 
 Similar Programs
 ----------------
