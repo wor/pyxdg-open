@@ -15,11 +15,19 @@ NEWS = open(os.path.join(here, 'NEWS.rst')).read() if os.path.exists("NEWS.rst")
 
 version = '0.1'
 
+filt_args = []
+exec_name="pyxdg-open"
+for i, arg in enumerate(sys.argv):
+    if arg.startswith("--exec_name="):
+        exec_name=arg[len("--exec_name="):]
+        sys.argv.pop(i)
+        break
+
 console_scripts = [
         # example entry point in wor/__init__.py:main
         # 'wor=wor:main'
         #'tokenize-desktop-file=wor.desktop_file_parser.desktop_file_parser:main',
-        'xdg-open=wor.xdg_open:main',
+        '{}=wor.xdg_open:main'.format(exec_name),
         ]
 
 # Remove console scripts if "--no-console_scripts" option given
