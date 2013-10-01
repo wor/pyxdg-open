@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*- vim:fenc=utf-8:ft=python:et:sw=4:ts=4:sts=4
-# This is your "setup.py" file.
-# See the following sites for general guide to Python packaging:
-#   * `The Hitchhiker's Guide to Packaging <http://guide.python-distribute.org/>`_
-#   * `Python Project Howto <http://infinitemonkeycorps.net/docs/pph/>`_
-
 from setuptools import setup, find_packages
 import sys
 import os
@@ -41,6 +36,7 @@ install_requires = [
     # For more details, see:
     # http://packages.python.org/distribute/setuptools.html#declaring-dependencies
     'desktop_file_parser',
+    'python-magic',
 ]
 
 
@@ -67,6 +63,7 @@ setup(name='pyxdg-open',
     zip_safe=False,
     # Requirements
     install_requires=install_requires,
+    tests_require=['nose'],
     dependency_links = [
             "https://github.com/wor/desktop_file_parser/tarball/master#egg=desktop_file_parser"
             ],

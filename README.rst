@@ -146,13 +146,17 @@ This also works correctly with following, as can be seen:
     INFO:run_exec:613: Calling exec string: zathura /tmp/test0.pdf
     INFO:run_exec:613: Calling exec string: zathura /tmp/test1.pdf
 
-Install
--------
+Easy install
+------------
 
-    python3 setup.py install --exec_name="pyxdg-open"
+Example of a simple user install:
+
+    python3 setup.py install --exec_name="xdg-open" --user
 
 The executable console script name can be controlled with the ´--exec_name=´
-argument. The default is ´pyxdg-open´.
+argument. The default is ´pyxdg-open´. The executable script in this example
+is placed in ´$HOME/.local/bin´ which can be added to the PATH variable if
+needed. This also installs needed dependencies.
 
 Archlinux PKGBUILD
 ------------------
@@ -195,7 +199,6 @@ TODO
 ----
 
 * Document differences to similar programs
-* Add info about easy installation
 * Read desktop cache files
 * Add missing xdg-open functionality
 
