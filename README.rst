@@ -151,6 +151,8 @@ Easy install
 
 Example of a simple user install:
 
+.. code-block:: bash
+
     python3 setup.py install --exec_name="xdg-open" --user
 
 The executable console script name can be controlled with the ´--exec_name=´
@@ -181,8 +183,10 @@ Dependencies
 Optional Dependencies
 ---------------------
 
-* `python-magic <http://darwinsys.com/file/>`_ >> `Arclinux AUR package
-  <https://aur.archlinux.org/packages/python-magic/>`_
+* `file <http://darwinsys.com/file/>`_ >> `Arclinux AUR package for python
+  magic bindings <https://aur.archlinux.org/packages/python-magic/>`_ >>
+  `Alternative pypi package magic bindings 
+  <https://pypi.python.org/pypi/python-magic>`_
 
 At the moment pyxdg-open works better with ´python-magic´ than, with the default
 python mimetypes library which is used only if ´python-magic´ is not found.
