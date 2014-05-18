@@ -116,7 +116,8 @@ class URL(object):
         if self.url.startswith("/"):
             return "file", self.url
 
-        m = re.match(r"([a-z]+)://", self.url, re.I)
+        # Magnet uri starts with 'magnet:?'
+        m = re.match(r"([a-z]+):(\?|//)", self.url, re.I)
         if m:
             protocol = m.groups()[0].lower()
             target = urllib.parse.unquote(self.url[m.span()[1]:])
