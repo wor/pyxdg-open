@@ -36,7 +36,7 @@ install_requires = [
     # For more details, see:
     # http://packages.python.org/distribute/setuptools.html#declaring-dependencies
     'desktop_file_parser',
-    'python-magic',
+    'Magic_file_extensions',
 ]
 
 
