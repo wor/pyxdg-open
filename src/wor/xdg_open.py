@@ -186,10 +186,12 @@ class URL(object):
         elif self.protocol == "magnet":
             mime_type = "application/x-bittorrent"
         else:
-            # XXX: Is there better way to determine mime type for protocol?
-            mime_type = "x-scheme-handler/" + self.protocol
-            log.info("Defaulted protocol '{}' to mime type: '{}'"
-                    .format(self.protocol, mime_type))
+            # XXX: Is there still a better way to determine mime type for protocol?
+            mime_type = MT.guess_type(self.url)[0]
+            if not mime_type:
+                mime_type = "x-scheme-handler/" + self.protocol
+                log.info("Defaulted protocol '{}' to mime type: '{}'"
+                        .format(self.protocol, mime_type))
         return mime_type
 
     # Getters
