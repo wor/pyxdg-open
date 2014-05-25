@@ -110,11 +110,16 @@ class URL(object):
     def __get_protocol_and_target__(self):
         """Tries to guess ´self.url´ URLs protocol.
 
+        Derefences symlinks when returning the target to local file url (path).
+        In this case modifies self.url to match the target, this helps to
+        determine the mime type later on.
+
         Returns:
             (str, str). Tuple of protocol and rest of the url without protocol,
                 or if not found tuple of None.
         """
         if self.url.startswith("/"):
+            self.url = os.path.realpath(self.url)
             return "file", self.url
 
         # Magnet uri starts with 'magnet:?'
@@ -125,7 +130,8 @@ class URL(object):
             return protocol, target
         else:
             # Treat url as relative file
-            return "file", os.path.join(os.getcwd(), self.url)
+            self.url = os.path.realpath(os.path.join(os.getcwd(), self.url))
+            return "file", self.url
         return (None, None)
     def __get_mimetype__(self):
         """Tries to guess ´url´ URLs mime type.
