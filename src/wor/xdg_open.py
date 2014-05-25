@@ -186,7 +186,7 @@ class URL(object):
         elif self.protocol == "magnet":
             mime_type = "application/x-bittorrent"
         else:
-            # XXX: Is there better way to determine mime type form protocol?
+            # XXX: Is there better way to determine mime type for protocol?
             mime_type = "x-scheme-handler/" + self.protocol
             log.info("Defaulted protocol '{}' to mime type: '{}'"
                     .format(self.protocol, mime_type))
