@@ -75,6 +75,7 @@ class URL(object):
         url
         protocol
         target
+        mime_type
         desktop_file
     """
     def __init__(self, url, protocol="", target="", mime_type=""):
