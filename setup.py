@@ -39,7 +39,7 @@ install_requires = [
 
 setup(name='pyxdg-open',
     version=VERSION,
-    description="Better xdg-open for console use.",
+    description="Opens URL or file in user preferred application (xdg-open replacement).",
     long_description=README + '\n\n' + NEWS,
     classifiers=[c.strip() for c in """
          Development Status :: 4 - Beta
