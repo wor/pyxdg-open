@@ -146,7 +146,7 @@ This also works correctly with following, as can be seen:
     INFO:run_exec:613: Calling exec string: zathura /tmp/test0.pdf
     INFO:run_exec:613: Calling exec string: zathura /tmp/test1.pdf
 
-Easy install
+Easy Install
 ------------
 
 Example of a simple user install:
@@ -159,6 +159,13 @@ The executable console script name can be controlled with the ´--exec_name=´
 argument. The default is ´pyxdg-open´. The executable script in this example
 is placed in ´$HOME/.local/bin´ which can be added to the PATH variable if
 needed. This also installs needed dependencies.
+
+pyxdg-open can also be installed from PyPI_:
+
+.. code-block:: bash
+
+    pip install pyxdg-open
+
 
 Archlinux PKGBUILD
 ------------------
@@ -211,5 +218,6 @@ TODO
 .. _`Desktop Entry Specification`: http://standards.freedesktop.org/desktop-entry-spec/latest/
 .. _`Exec key`: http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
 .. _`xdg-open: be more paranoid in escaping`: http://cgit.freedesktop.org/xdg/xdg-utils/commit/?id=2373d9b2b70652e447b413cde7939bff42fb960d
+.. _PyPi: https://pypi.python.org/pypi/pyxdg-open
 .. _`List of xdg-open replacements on Archlinux wiki`: https://wiki.archlinux.org/index.php/Xdg-open#xdg-open_replacements
 .. _mimi: https://github.com/taylorchu/mimi
