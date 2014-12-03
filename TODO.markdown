@@ -63,6 +63,7 @@ http://musicbrainz.org:80/taglookup?tport=8000&artist=World%27s%20End%20Girlfrie
 
 Should honor header Content-Type:
 
+```
 > curl -I 'http://musicbrainz.org:80/taglookup?tport=8000&artist=World%27s%20End%20Girlfriend&release=Birthday%20Resistance%20Parade&track=Birthday%20Resistance%20Parade&tracknum=1&duration=466770&filename=01_-_birthday_resistance_parade.flac'
 
 HTTP/1.1 200 OK
@@ -74,10 +75,11 @@ Server: nginx/1.1.19
 Set-Cookie: musicbrainz_server_session=b7c7c4df86ef888fe1e1bb746a02089e101617af;
 path=/; expires=Sun, 29-Jun-2014 13:56:44 GMT; HttpOnly
 Set-Cookie: javascript=false; path=/
-
+```
 
 Opening steam desktop game file fails, starts bashwrap vim
 
+```
 $ INFO:xdg_open:789: Got urls: '['Shadowrun Returns.desktop']'
 INFO:__get_mimetype__:167: Unescaped file url target: /home/wor/Shadowrun
 Returns.desktop
@@ -106,4 +108,12 @@ INFO:run_exec:738: Final exec string(s): ['urxvtc -e bash --rcfile
 INFO:run_exec:740: Calling exec string: urxvtc -e bash --rcfile /tmp/tmpfhkit8s7
 -i
 
-
+[Desktop Entry]
+Name=Shadowrun Returns
+Comment=Play this game on Steam
+Exec=steam steam://rungameid/234650
+Icon=steam_icon_234650
+Terminal=false
+Type=Application
+Categories=Game;
+```
